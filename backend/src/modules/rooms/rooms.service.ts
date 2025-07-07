@@ -50,7 +50,13 @@ export class RoomsService {
   async findOne(id: number): Promise<Room> {
     const room = await this.roomsRepository.findOne({
       where: { id },
-      relations: ["contest", "creator", "roomUsers", "roomUsers.user"],
+      relations: [
+        "contest",
+        "creator",
+        "roomUsers",
+        "roomUsers.user",
+        "problem",
+      ],
     });
 
     if (!room) {
