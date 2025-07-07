@@ -10,8 +10,6 @@ export default function ProblemsPage() {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState<string>("ALL");
   const router = useRouter();
@@ -24,14 +22,15 @@ export default function ProblemsPage() {
     }
 
     fetchProblems();
-  }, [token, page, searchTerm, difficultyFilter]);
+  }, [token, searchTerm, difficultyFilter]);
 
   const fetchProblems = async () => {
     try {
       setLoading(true);
-      const response = await problemsAPI.getAll(page, 20);
+      const response = await problemsAPI.getAll();
       if (response.success && response.data) {
-        let filteredProblems = response.data.data;
+        // 백엔드에서 바로 배열을 반환하므로 response.data가 배열
+        let filteredProblems = response.data || [];
 
         // 검색어 필터링
         if (searchTerm) {
@@ -52,7 +51,6 @@ export default function ProblemsPage() {
         }
 
         setProblems(filteredProblems);
-        setTotalPages(response.data.totalPages);
       } else {
         setError(response.message || "문제 목록을 불러오는데 실패했습니다.");
       }
@@ -240,31 +238,6 @@ export default function ProblemsPage() {
                 </div>
               </div>
             ))}
-          </div>
-        )}
-
-        {/* 페이지네이션 */}
-        {totalPages > 1 && (
-          <div className="flex justify-center mt-8">
-            <nav className="flex items-center gap-2">
-              <button
-                onClick={() => setPage(Math.max(1, page - 1))}
-                disabled={page === 1}
-                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                이전
-              </button>
-              <span className="px-3 py-2 text-sm text-gray-700">
-                {page} / {totalPages}
-              </span>
-              <button
-                onClick={() => setPage(Math.min(totalPages, page + 1))}
-                disabled={page === totalPages}
-                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                다음
-              </button>
-            </nav>
           </div>
         )}
       </div>

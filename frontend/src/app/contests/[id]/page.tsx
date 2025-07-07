@@ -48,7 +48,7 @@ export default function ContestDetailPage() {
       // 문제 목록 가져오기
       const problemsResponse = await problemsAPI.getAll(1, 50, contestId);
       if (problemsResponse.success && problemsResponse.data) {
-        setProblems(problemsResponse.data.data);
+        setProblems(problemsResponse.data);
       }
 
       // 방 목록 가져오기

@@ -132,11 +132,8 @@ export const problemsAPI = {
     page = 1,
     limit = 10,
     contestId?: string
-  ): Promise<ApiResponse<PaginatedResponse<Problem>>> => {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
+  ): Promise<ApiResponse<Problem[]>> => {
+    const params = new URLSearchParams();
     if (contestId) params.append("contestId", contestId);
     const response = await apiClient.get(`/problems?${params}`);
     return response.data;
