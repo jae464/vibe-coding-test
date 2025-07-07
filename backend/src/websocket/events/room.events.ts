@@ -3,6 +3,7 @@ export interface CodeChangeEvent {
   code: string;
   editorId: number;
   editorName: string;
+  clientId?: string;
 }
 
 export interface JoinRoomEvent {
@@ -30,4 +31,4 @@ export interface SubmissionEvent {
   problemId: number;
   status: string;
   resultMessage?: string;
-} 
+}

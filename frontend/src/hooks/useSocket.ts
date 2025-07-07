@@ -5,7 +5,7 @@ import { SocketEvents, ChatMessage, User } from "@/types";
 
 interface UseSocketOptions {
   roomId?: string;
-  onCodeChange?: (code: string, userId: string) => void;
+  onCodeChange?: (code: string, userId: string, clientId?: string) => void;
   onUserJoined?: (user: User) => void;
   onUserLeft?: (user: User) => void;
   onChatMessage?: (message: ChatMessage) => void;
@@ -36,7 +36,7 @@ export const useSocket = (options: UseSocketOptions = {}) => {
 
     // 연결 이벤트
     socketRef.current.on("connect", () => {
-      console.log("WebSocket 연결됨");
+      console.log("WebSocket 연결됨, Client ID:", socketRef.current?.id);
       isConnectingRef.current = false;
 
       // 방 참가
@@ -73,7 +73,7 @@ export const useSocket = (options: UseSocketOptions = {}) => {
     // 코드 편집 이벤트
     socketRef.current.on("code_updated", (data) => {
       console.log("코드 변경:", data);
-      options.onCodeChange?.(data.code, data.editorId);
+      options.onCodeChange?.(data.code, String(data.editorId), data.clientId);
     });
 
     // 채팅 이벤트
@@ -108,11 +108,13 @@ export const useSocket = (options: UseSocketOptions = {}) => {
   const sendCodeChange = useCallback(
     (code: string) => {
       if (options.roomId && user?.id) {
+        const clientId = socketRef.current?.id || Date.now().toString();
         emit("code_change", {
           roomId: options.roomId,
           code,
           editorId: user.id,
           editorName: user.username,
+          clientId: clientId,
         });
       }
     },
@@ -155,6 +157,7 @@ export const useSocket = (options: UseSocketOptions = {}) => {
   return {
     socket: socketRef.current,
     connected: socketRef.current?.connected || false,
+    clientId: socketRef.current?.id || "",
     emit,
     sendCodeChange,
     sendChatMessage,

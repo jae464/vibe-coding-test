@@ -120,13 +120,14 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     console.log(`[WebSocket] code_change event received:`, data);
 
-    const { roomId, code, editorId, editorName } = data;
+    const { roomId, code, editorId, editorName, clientId } = data;
 
     // 방의 다른 사용자들에게 코드 변경 알림
     client.to(`room_${roomId}`).emit("code_updated", {
       code,
       editorId,
       editorName,
+      clientId: clientId || client.id,
       timestamp: new Date(),
     });
     console.log(`[WebSocket] Emitted code_updated to room_${roomId}`);

@@ -35,6 +35,8 @@ export default function RoomPage() {
   const [problem, setProblem] = useState<Problem | null>(null);
   const [participants, setParticipants] = useState<User[]>([]);
   const [code, setCode] = useState("");
+  const [codeVersion, setCodeVersion] = useState(0);
+  const [currentClientId, setCurrentClientId] = useState<string>("");
   const [language, setLanguage] = useState("javascript");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -45,18 +47,50 @@ export default function RoomPage() {
   >("problem");
 
   // WebSocket 연결
-  const { sendCodeChange, sendChatMessage, connected } = useSocket({
+  const { sendCodeChange, sendChatMessage, connected, clientId } = useSocket({
     roomId,
-    onCodeChange: (newCode: string, userId: string) => {
-      if (userId !== user?.id) {
+    onCodeChange: (
+      newCode: string,
+      userId: string,
+      receivedClientId?: string
+    ) => {
+      console.log("코드 변경 이벤트 수신:", {
+        newCode: newCode.substring(0, 100) + "...",
+        userId,
+        receivedClientId,
+        currentClientId: clientId,
+        currentUserId: user?.id,
+        isDifferentClient: receivedClientId !== clientId,
+      });
+      if (receivedClientId !== clientId) {
+        console.log("다른 클라이언트의 코드 변경을 적용합니다");
         setCode(newCode);
+        setCodeVersion((prev) => prev + 1);
+      } else {
+        console.log("자신의 코드 변경이므로 무시합니다");
       }
     },
-    onUserJoined: (user: User) => {
-      setParticipants((prev) => [...prev, user]);
+    onUserJoined: (data: any) => {
+      console.log("사용자 참가 이벤트:", data);
+      const newUser = {
+        id: data.userId,
+        username: data.username,
+        email: "",
+        role: "USER",
+        createdAt: data.timestamp,
+        updatedAt: data.timestamp,
+      };
+      setParticipants((prev) => {
+        const exists = prev.find((p) => p.id === newUser.id);
+        if (!exists) {
+          return [...prev, newUser];
+        }
+        return prev;
+      });
     },
-    onUserLeft: (user: User) => {
-      setParticipants((prev) => prev.filter((p) => p.id !== user.id));
+    onUserLeft: (data: any) => {
+      console.log("사용자 퇴장 이벤트:", data);
+      setParticipants((prev) => prev.filter((p) => p.id !== data.userId));
     },
     onChatMessage: (message: ChatMessage) => {
       setChatMessages((prev) => [...prev, message]);
@@ -237,6 +271,7 @@ export default function RoomPage() {
           {/* 코드 에디터 */}
           <div className="flex-1">
             <MonacoEditor
+              key={`editor-${codeVersion}`}
               height="100%"
               language={language}
               value={code}
