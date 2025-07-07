@@ -43,16 +43,18 @@ export class TerminalService {
       const sessionId = uuidv4();
       const containerName = `terminal-${sessionId}`;
 
-      // 언어별 기본 이미지 선택
-      const imageMap = {
-        javascript: "node:18-alpine",
-        python: "python:3.11-alpine",
-        java: "openjdk:17-alpine",
-        cpp: "gcc:latest",
-        bash: "ubuntu:latest",
-      };
+      // 기본 ubuntu 이미지 사용 (모든 언어 지원)
+      const image = "ubuntu:latest";
 
-      const image = imageMap[language] || "ubuntu:latest";
+      await new Promise<void>((resolve, reject) => {
+        this.docker.pull(image, (err, stream) => {
+          if (err) return reject(err);
+          // pull 진행 로그를 무시하거나 찍어줄 수 있습니다.
+          this.docker.modem.followProgress(stream, (pullErr) =>
+            pullErr ? reject(pullErr) : resolve()
+          );
+        });
+      });
 
       // 컨테이너 생성
       const container = await this.docker.createContainer({
@@ -80,6 +82,9 @@ export class TerminalService {
 
       await container.start();
 
+      // 언어별 도구 설치
+      await this.installLanguageTools(container, language);
+
       const session: TerminalSession = {
         id: sessionId,
         userId,
@@ -98,6 +103,62 @@ export class TerminalService {
     } catch (error) {
       this.logger.error(`Failed to create terminal session: ${error.message}`);
       throw new Error("터미널 세션 생성에 실패했습니다.");
+    }
+  }
+
+  /**
+   * 언어별 도구 설치
+   */
+  private async installLanguageTools(
+    container: any,
+    language: string
+  ): Promise<void> {
+    try {
+      const toolsMap = {
+        javascript:
+          "curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && apt-get install -y nodejs",
+        python: "apt-get update && apt-get install -y python3 python3-pip",
+        java: "apt-get update && apt-get install -y openjdk-17-jdk",
+        cpp: "apt-get update && apt-get install -y g++",
+        bash: 'echo "Bash is already available"',
+      };
+
+      const installCommand =
+        toolsMap[language as keyof typeof toolsMap] || toolsMap.bash;
+
+      const exec = await container.exec({
+        AttachStdout: true,
+        AttachStderr: true,
+        Cmd: ["/bin/bash", "-c", installCommand],
+      });
+
+      return new Promise((resolve, reject) => {
+        exec.start({}, (err, stream) => {
+          if (err) {
+            this.logger.error(
+              `Failed to install language tools for ${language}: ${err.message}`
+            );
+            resolve(); // 에러가 있어도 계속 진행
+            return;
+          }
+
+          stream.on("end", () => {
+            this.logger.log(`Language tools installed for ${language}`);
+            resolve();
+          });
+
+          stream.on("error", (err) => {
+            this.logger.error(
+              `Failed to install language tools for ${language}: ${err.message}`
+            );
+            resolve(); // 에러가 있어도 계속 진행
+          });
+        });
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to install language tools for ${language}: ${error.message}`
+      );
     }
   }
 
@@ -124,34 +185,40 @@ export class TerminalService {
         Cmd: ["/bin/bash", "-c", command],
       });
 
-      const stream = await exec.start();
       let output = "";
       let error = "";
 
       return new Promise((resolve, reject) => {
-        stream.on("data", (chunk) => {
-          output += chunk.toString();
-        });
-
-        stream.on("error", (err) => {
-          error += err.toString();
-        });
-
-        stream.on("end", async () => {
-          try {
-            const inspect = await exec.inspect();
-            const result: TerminalCommand = {
-              sessionId,
-              command,
-              output,
-              error: error || undefined,
-              exitCode: inspect.ExitCode || 0,
-            };
-
-            resolve(result);
-          } catch (err) {
+        exec.start({}, (err, stream) => {
+          if (err) {
             reject(err);
+            return;
           }
+
+          stream.on("data", (chunk) => {
+            output += chunk.toString();
+          });
+
+          stream.on("error", (err) => {
+            error += err.toString();
+          });
+
+          stream.on("end", async () => {
+            try {
+              const inspect = await exec.inspect();
+              const result: TerminalCommand = {
+                sessionId,
+                command,
+                output,
+                error: error || undefined,
+                exitCode: inspect.ExitCode || 0,
+              };
+
+              resolve(result);
+            } catch (err) {
+              reject(err);
+            }
+          });
         });
       });
     } catch (error) {
@@ -185,8 +252,25 @@ export class TerminalService {
         ],
       });
 
-      await exec.start();
-      this.logger.log(`File created: ${filename} in session: ${sessionId}`);
+      return new Promise((resolve, reject) => {
+        exec.start({}, (err, stream) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+
+          stream.on("end", () => {
+            this.logger.log(
+              `File created: ${filename} in session: ${sessionId}`
+            );
+            resolve();
+          });
+
+          stream.on("error", (err) => {
+            reject(err);
+          });
+        });
+      });
     } catch (error) {
       this.logger.error(`Failed to create file: ${error.message}`);
       throw new Error("파일 생성에 실패했습니다.");
@@ -210,20 +294,26 @@ export class TerminalService {
         Cmd: ["cat", `/workspace/${filename}`],
       });
 
-      const stream = await exec.start();
       let content = "";
 
       return new Promise((resolve, reject) => {
-        stream.on("data", (chunk) => {
-          content += chunk.toString();
-        });
+        exec.start({}, (err, stream) => {
+          if (err) {
+            reject(err);
+            return;
+          }
 
-        stream.on("error", (err) => {
-          reject(err);
-        });
+          stream.on("data", (chunk) => {
+            content += chunk.toString();
+          });
 
-        stream.on("end", () => {
-          resolve(content);
+          stream.on("error", (err) => {
+            reject(err);
+          });
+
+          stream.on("end", () => {
+            resolve(content);
+          });
         });
       });
     } catch (error) {
