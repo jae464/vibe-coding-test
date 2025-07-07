@@ -5,6 +5,13 @@ import { useRouter, useParams } from "next/navigation";
 import { Problem, Submission } from "@/types";
 import { problemsAPI, submissionsAPI } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
+import Navigation from "@/components/layout/Navigation";
+import dynamic from "next/dynamic";
+
+// Monaco Editor를 동적으로 로드
+const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
+  ssr: false,
+});
 
 export default function ProblemDetailPage() {
   const [problem, setProblem] = useState<Problem | null>(null);
@@ -194,13 +201,16 @@ int main() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="animate-pulse">
+              <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
+              <div className="bg-white p-6 rounded-lg shadow">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -210,22 +220,25 @@ int main() {
 
   if (error || !problem) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center py-12">
-            <div className="text-red-400 text-6xl mb-4">⚠️</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              오류가 발생했습니다
-            </h3>
-            <p className="text-gray-600 mb-6">
-              {error || "문제를 찾을 수 없습니다."}
-            </p>
-            <button
-              onClick={() => router.push("/problems")}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
-            >
-              문제 목록으로 돌아가기
-            </button>
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center py-12">
+              <div className="text-red-400 text-6xl mb-4">⚠️</div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                오류가 발생했습니다
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {error || "문제를 찾을 수 없습니다."}
+              </p>
+              <button
+                onClick={() => router.push("/problems")}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
+              >
+                문제 목록으로 돌아가기
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -233,165 +246,182 @@ int main() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* 헤더 */}
-        <div className="mb-8">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
+
+      <div className="py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* 헤더 */}
+          <div className="mb-8">
+            <button
+              onClick={() => router.push("/problems")}
+              className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            뒤로 가기
-          </button>
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+              문제 목록으로 돌아가기
+            </button>
 
-          <div className="flex justify-between items-start">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-gray-900">
-                  {problem.title}
-                </h1>
-                <span
-                  className={`px-3 py-1 text-sm font-medium rounded-full ${
-                    problem.difficulty === "EASY"
-                      ? "bg-green-100 text-green-800"
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    {problem.title}
+                  </h1>
+                  <span
+                    className={`px-3 py-1 text-sm font-medium rounded-full ${
+                      problem.difficulty === "EASY"
+                        ? "bg-green-100 text-green-800"
+                        : problem.difficulty === "MEDIUM"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {problem.difficulty === "EASY"
+                      ? "쉬움"
                       : problem.difficulty === "MEDIUM"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
-                >
-                  {problem.difficulty}
-                </span>
-              </div>
-              <div className="flex items-center gap-6 text-sm text-gray-500">
-                <div className="flex items-center gap-1">
-                  <span className="font-medium">시간 제한:</span>
-                  <span>{problem.timeLimit}ms</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="font-medium">메모리 제한:</span>
-                  <span>{problem.memoryLimit}MB</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* 문제 설명 */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              문제 설명
-            </h2>
-            <div className="prose max-w-none">
-              <div className="whitespace-pre-wrap text-gray-700">
-                {problem.description}
-              </div>
-            </div>
-          </div>
-
-          {/* 코드 에디터 */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">코드 작성</h2>
-              <select
-                value={language}
-                onChange={(e) => handleLanguageChange(e.target.value)}
-                className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="javascript">JavaScript</option>
-                <option value="python">Python</option>
-                <option value="java">Java</option>
-                <option value="cpp">C++</option>
-              </select>
-            </div>
-
-            <textarea
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              className="w-full h-96 p-4 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              placeholder="코드를 작성하세요..."
-            />
-
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {submitting ? "제출 중..." : "제출하기"}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* 제출 결과 */}
-        {submissionResult && (
-          <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              제출 결과
-            </h2>
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <span className="font-medium">상태:</span>
-                <span
-                  className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(
-                    submissionResult.status
-                  )}`}
-                >
-                  {getStatusText(submissionResult.status)}
-                </span>
-              </div>
-
-              {submissionResult.executionTime && (
-                <div className="flex items-center gap-4">
-                  <span className="font-medium">실행 시간:</span>
-                  <span className="text-gray-700">
-                    {submissionResult.executionTime}ms
+                      ? "보통"
+                      : "어려움"}
                   </span>
                 </div>
-              )}
-
-              {submissionResult.memoryUsed && (
-                <div className="flex items-center gap-4">
-                  <span className="font-medium">메모리 사용량:</span>
-                  <span className="text-gray-700">
-                    {submissionResult.memoryUsed}MB
-                  </span>
+                <p className="text-gray-600 mb-4">{problem.description}</p>
+                <div className="flex items-center gap-6 text-sm text-gray-500">
+                  <div className="flex items-center gap-1">
+                    <span className="font-medium">시간 제한:</span>
+                    <span>{problem.timeLimit}ms</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="font-medium">메모리 제한:</span>
+                    <span>{problem.memoryLimit}MB</span>
+                  </div>
                 </div>
-              )}
-
-              {submissionResult.status === "COMPILATION_ERROR" && (
-                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <h4 className="font-medium text-red-800 mb-2">컴파일 에러</h4>
-                  <pre className="text-sm text-red-700 whitespace-pre-wrap">
-                    {submissionResult.errorMessage ||
-                      "컴파일 에러가 발생했습니다."}
-                  </pre>
-                </div>
-              )}
+              </div>
             </div>
           </div>
-        )}
 
-        {/* 에러 메시지 */}
-        {error && (
-          <div className="mt-8 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
+          {/* 메인 콘텐츠 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* 문제 설명 */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                문제 설명
+              </h2>
+              <div className="prose max-w-none">
+                <p className="text-gray-700 whitespace-pre-wrap">
+                  {problem.description}
+                </p>
+              </div>
+            </div>
+
+            {/* 코드 에디터 */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="p-4 border-b border-gray-200">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    코드 작성
+                  </h2>
+                  <div className="flex items-center space-x-4">
+                    <select
+                      value={language}
+                      onChange={(e) => handleLanguageChange(e.target.value)}
+                      className="border border-gray-300 rounded-md px-3 py-1 text-sm"
+                    >
+                      <option value="javascript">JavaScript</option>
+                      <option value="python">Python</option>
+                      <option value="java">Java</option>
+                      <option value="cpp">C++</option>
+                    </select>
+                    <button
+                      onClick={handleSubmit}
+                      disabled={submitting || !code.trim()}
+                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md text-sm font-medium"
+                    >
+                      {submitting ? "제출 중..." : "제출"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="h-96">
+                <MonacoEditor
+                  height="100%"
+                  language={language}
+                  value={code}
+                  onChange={(value) => setCode(value || "")}
+                  theme="vs-dark"
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 14,
+                    lineNumbers: "on",
+                    roundedSelection: false,
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                  }}
+                />
+              </div>
+            </div>
           </div>
-        )}
+
+          {/* 제출 결과 */}
+          {submissionResult && (
+            <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                제출 결과
+              </h2>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(
+                      submissionResult.status
+                    )}`}
+                  >
+                    {getStatusText(submissionResult.status)}
+                  </span>
+                  {submissionResult.executionTime && (
+                    <span className="text-sm text-gray-600">
+                      실행 시간: {submissionResult.executionTime}ms
+                    </span>
+                  )}
+                  {submissionResult.memoryUsed && (
+                    <span className="text-sm text-gray-600">
+                      메모리 사용량: {submissionResult.memoryUsed}MB
+                    </span>
+                  )}
+                </div>
+                {submissionResult.status === "WRONG_ANSWER" && (
+                  <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                    <h3 className="text-sm font-medium text-red-800 mb-2">
+                      오답입니다
+                    </h3>
+                    <p className="text-sm text-red-700">
+                      코드를 다시 확인하고 수정해보세요.
+                    </p>
+                  </div>
+                )}
+                {submissionResult.status === "ACCEPTED" && (
+                  <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                    <h3 className="text-sm font-medium text-green-800 mb-2">
+                      정답입니다!
+                    </h3>
+                    <p className="text-sm text-green-700">
+                      축하합니다! 문제를 성공적으로 해결했습니다.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
