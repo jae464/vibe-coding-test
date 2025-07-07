@@ -1,9 +1,13 @@
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
+import { IoAdapter } from "@nestjs/platform-socket.io";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // WebSocket 어댑터 설정
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   // 글로벌 파이프 설정
   app.useGlobalPipes(

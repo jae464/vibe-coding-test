@@ -30,7 +30,7 @@ export default function RoomPage() {
   const router = useRouter();
   const roomId = params.id as string;
 
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, token } = useAuthStore();
   const [room, setRoom] = useState<Room | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
   const [participants, setParticipants] = useState<User[]>([]);
@@ -167,7 +167,7 @@ export default function RoomPage() {
     }
   };
 
-  if (!isAuthenticated) {
+  if (!token) {
     router.push("/login");
     return null;
   }
