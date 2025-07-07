@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import Link from 'next/link';
-import { useAuthStore } from '@/store/auth';
-import Navigation from '@/components/layout/Navigation';
-import { Code, Trophy, Users, ArrowRight, Play } from 'lucide-react';
+import { useEffect } from "react";
+import Link from "next/link";
+import { useAuthStore } from "@/store/auth";
+import Navigation from "@/components/layout/Navigation";
+import { Code, Trophy, Users, ArrowRight, Play } from "lucide-react";
 
 export default function HomePage() {
   const { checkAuth, isAuthenticated } = useAuthStore();
@@ -16,7 +16,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
-      
+
       {/* Hero Section */}
       <section className="bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
@@ -26,8 +26,8 @@ export default function HomePage() {
               <span className="text-primary-600"> 알고리즘 대회</span>
             </h1>
             <p className="mt-6 text-xl text-gray-600 max-w-3xl mx-auto">
-              여러 명이 함께 문제를 풀고, 실시간으로 코드를 공유하며, 
-              서로의 아이디어를 나누는 새로운 알고리즘 대회 플랫폼입니다.
+              여러 명이 함께 문제를 풀고, 실시간으로 코드를 공유하며, 서로의
+              아이디어를 나누는 새로운 알고리즘 대회 플랫폼입니다.
             </p>
             <div className="mt-10 flex justify-center space-x-4">
               <Link
@@ -53,9 +53,7 @@ export default function HomePage() {
       <section className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900">
-              주요 기능
-            </h2>
+            <h2 className="text-3xl font-bold text-gray-900">주요 기능</h2>
             <p className="mt-4 text-lg text-gray-600">
               실시간 협업과 효율적인 문제 풀이를 위한 다양한 기능을 제공합니다.
             </p>
@@ -70,8 +68,8 @@ export default function HomePage() {
                 실시간 코드 편집
               </h3>
               <p className="text-gray-600">
-                여러 명이 동시에 같은 코드를 편집하고, 
-                실시간으로 변경사항을 확인할 수 있습니다.
+                여러 명이 동시에 같은 코드를 편집하고, 실시간으로 변경사항을
+                확인할 수 있습니다.
               </p>
             </div>
 
@@ -83,8 +81,8 @@ export default function HomePage() {
                 자동 채점 시스템
               </h3>
               <p className="text-gray-600">
-                코드를 제출하면 즉시 자동으로 채점되어 
-                결과를 실시간으로 확인할 수 있습니다.
+                코드를 제출하면 즉시 자동으로 채점되어 결과를 실시간으로 확인할
+                수 있습니다.
               </p>
             </div>
 
@@ -96,8 +94,8 @@ export default function HomePage() {
                 실시간 채팅
               </h3>
               <p className="text-gray-600">
-                팀원들과 실시간으로 의견을 나누고, 
-                문제 해결 과정을 함께 논의할 수 있습니다.
+                팀원들과 실시간으로 의견을 나누고, 문제 해결 과정을 함께 논의할
+                수 있습니다.
               </p>
             </div>
           </div>
@@ -116,7 +114,7 @@ export default function HomePage() {
             </p>
             <div className="flex justify-center space-x-4">
               <Link
-                href="/register"
+                href="/signup"
                 className="bg-white text-primary-600 px-8 py-3 rounded-lg text-lg font-medium hover:bg-gray-50 flex items-center space-x-2"
               >
                 <span>회원가입</span>
@@ -147,32 +145,50 @@ export default function HomePage() {
                 실시간 협업 알고리즘 문제 풀이 플랫폼
               </p>
             </div>
-            
+
             <div>
               <h3 className="text-lg font-semibold mb-4">서비스</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><Link href="/contests" className="hover:text-white">대회</Link></li>
-                <li><Link href="/problems" className="hover:text-white">문제</Link></li>
-                <li><Link href="/rooms" className="hover:text-white">방</Link></li>
+                <li>
+                  <Link href="/contests" className="hover:text-white">
+                    대회
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/problems" className="hover:text-white">
+                    문제
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/rooms" className="hover:text-white">
+                    방
+                  </Link>
+                </li>
               </ul>
             </div>
-            
+
             <div>
               <h3 className="text-lg font-semibold mb-4">계정</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><Link href="/login" className="hover:text-white">로그인</Link></li>
-                <li><Link href="/register" className="hover:text-white">회원가입</Link></li>
+                <li>
+                  <Link href="/login" className="hover:text-white">
+                    로그인
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/signup" className="hover:text-white">
+                    회원가입
+                  </Link>
+                </li>
               </ul>
             </div>
-            
+
             <div>
               <h3 className="text-lg font-semibold mb-4">문의</h3>
-              <p className="text-gray-400">
-                support@algorithm-contest.com
-              </p>
+              <p className="text-gray-400">support@algorithm-contest.com</p>
             </div>
           </div>
-          
+
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
             <p>&copy; 2024 알고리즘 대회 플랫폼. All rights reserved.</p>
           </div>
@@ -180,4 +196,4 @@ export default function HomePage() {
       </footer>
     </div>
   );
-} 
+}

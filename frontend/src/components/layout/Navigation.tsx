@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useAuthStore } from '@/store/auth';
-import { Code, Trophy, Users, LogOut, User } from 'lucide-react';
+import Link from "next/link";
+import { useAuthStore } from "@/store/auth";
+import { Code, Trophy, Users, LogOut, User } from "lucide-react";
 
 const Navigation = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -53,7 +53,9 @@ const Navigation = () => {
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                   <User className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm text-gray-700">{user?.username}</span>
+                  <span className="text-sm text-gray-700">
+                    {user?.username}
+                  </span>
                 </div>
                 <button
                   onClick={handleLogout}
@@ -72,7 +74,7 @@ const Navigation = () => {
                   로그인
                 </Link>
                 <Link
-                  href="/register"
+                  href="/signup"
                   className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
                 >
                   회원가입
@@ -86,4 +88,4 @@ const Navigation = () => {
   );
 };
 
-export default Navigation; 
+export default Navigation;

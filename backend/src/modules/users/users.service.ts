@@ -1,16 +1,20 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import * as bcrypt from 'bcryptjs';
-import { User } from '../../entities/User';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import * as bcrypt from "bcryptjs";
+import { User } from "../../entities/User";
+import { CreateUserDto } from "./dto/create-user.dto";
+import { UpdateUserDto } from "./dto/update-user.dto";
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
-    private usersRepository: Repository<User>,
+    private usersRepository: Repository<User>
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -19,7 +23,7 @@ export class UsersService {
       where: { email: createUserDto.email },
     });
     if (existingUser) {
-      throw new ConflictException('이미 존재하는 이메일입니다.');
+      throw new ConflictException("이미 존재하는 이메일입니다.");
     }
 
     // 중복 username 체크
@@ -27,7 +31,7 @@ export class UsersService {
       where: { username: createUserDto.username },
     });
     if (existingUsername) {
-      throw new ConflictException('이미 존재하는 사용자명입니다.');
+      throw new ConflictException("이미 존재하는 사용자명입니다.");
     }
 
     // 비밀번호 해시화
@@ -43,18 +47,18 @@ export class UsersService {
 
   async findAll(): Promise<User[]> {
     return this.usersRepository.find({
-      select: ['id', 'username', 'email', 'role', 'createdAt'],
+      select: ["id", "username", "email", "role", "createdAt"],
     });
   }
 
   async findOne(id: number): Promise<User> {
     const user = await this.usersRepository.findOne({
       where: { id },
-      select: ['id', 'username', 'email', 'role', 'createdAt'],
+      select: ["id", "username", "email", "role", "createdAt"],
     });
 
     if (!user) {
-      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+      throw new NotFoundException("사용자를 찾을 수 없습니다.");
     }
 
     return user;
@@ -66,6 +70,12 @@ export class UsersService {
     });
   }
 
+  async findByUsername(username: string): Promise<User | null> {
+    return this.usersRepository.findOne({
+      where: { username },
+    });
+  }
+
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.findOne(id);
 
@@ -74,7 +84,7 @@ export class UsersService {
         where: { email: updateUserDto.email },
       });
       if (existingUser && existingUser.id !== id) {
-        throw new ConflictException('이미 존재하는 이메일입니다.');
+        throw new ConflictException("이미 존재하는 이메일입니다.");
       }
     }
 
@@ -83,14 +93,14 @@ export class UsersService {
         where: { username: updateUserDto.username },
       });
       if (existingUser && existingUser.id !== id) {
-        throw new ConflictException('이미 존재하는 사용자명입니다.');
+        throw new ConflictException("이미 존재하는 사용자명입니다.");
       }
     }
 
     if (updateUserDto.password) {
       const passwordHash = await bcrypt.hash(updateUserDto.password, 10);
       delete updateUserDto.password;
-      updateUserDto['passwordHash'] = passwordHash;
+      updateUserDto["passwordHash"] = passwordHash;
     }
 
     await this.usersRepository.update(id, updateUserDto);
@@ -101,4 +111,4 @@ export class UsersService {
     const user = await this.findOne(id);
     await this.usersRepository.remove(user);
   }
-} 
+}

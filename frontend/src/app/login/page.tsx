@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useAuthStore } from '@/store/auth';
-import Navigation from '@/components/layout/Navigation';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAuthStore } from "@/store/auth";
+import Navigation from "@/components/layout/Navigation";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const router = useRouter();
   const { login, error, clearError } = useAuthStore();
 
@@ -23,7 +23,7 @@ export default function LoginPage() {
 
     const success = await login(email, password);
     if (success) {
-      router.push('/');
+      router.push("/");
     }
     setIsLoading(false);
   };
@@ -31,7 +31,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
-      
+
       <div className="flex min-h-screen items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-8">
           <div>
@@ -39,9 +39,9 @@ export default function LoginPage() {
               로그인
             </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
-              계정이 없으신가요?{' '}
+              계정이 없으신가요?{" "}
               <Link
-                href="/register"
+                href="/signup"
                 className="font-medium text-primary-600 hover:text-primary-500"
               >
                 회원가입
@@ -52,7 +52,10 @@ export default function LoginPage() {
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   이메일
                 </label>
                 <div className="mt-1 relative">
@@ -74,7 +77,10 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   비밀번호
                 </label>
                 <div className="mt-1 relative">
@@ -84,7 +90,7 @@ export default function LoginPage() {
                   <input
                     id="password"
                     name="password"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
                     required
                     value={password}
@@ -125,7 +131,7 @@ export default function LoginPage() {
                     로그인 중...
                   </div>
                 ) : (
-                  '로그인'
+                  "로그인"
                 )}
               </button>
             </div>
@@ -134,4 +140,4 @@ export default function LoginPage() {
       </div>
     </div>
   );
-} 
+}
