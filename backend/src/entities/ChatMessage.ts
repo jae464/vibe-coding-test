@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  UpdateDateColumn,
   ManyToOne,
   JoinColumn,
 } from "typeorm";
@@ -20,18 +21,21 @@ export class ChatMessage {
   @Column({ name: "user_id" })
   userId: number;
 
-  @Column({ type: "text" })
+  @Column("text")
   message: string;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
 
+  @UpdateDateColumn({ name: "updated_at" })
+  updatedAt: Date;
+
   // Relations
-  @ManyToOne(() => Room, (room) => room.chatMessages)
+  @ManyToOne(() => Room, (room) => room.messages)
   @JoinColumn({ name: "room_id" })
   room: Room;
 
-  @ManyToOne(() => User, (user) => user.chatMessages)
+  @ManyToOne(() => User, (user) => user.messages)
   @JoinColumn({ name: "user_id" })
   user: User;
 }

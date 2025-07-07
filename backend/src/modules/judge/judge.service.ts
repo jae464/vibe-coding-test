@@ -330,7 +330,6 @@ export class JudgeService {
     await this.submissionsRepository.update(submission.id, {
       status,
       resultMessage: this.formatResultMessage(result),
-      score: result.passedTestcases,
       executionTime: result.totalExecutionTime,
       memoryUsed: result.maxMemoryUsed,
     });

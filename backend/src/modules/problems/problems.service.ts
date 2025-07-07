@@ -19,7 +19,7 @@ export class ProblemsService {
   async findAll(): Promise<Problem[]> {
     return this.problemsRepository.find({
       relations: ['contest', 'testcases'],
-      order: { order: 'ASC' },
+      order: { id: 'ASC' },
     });
   }
 
@@ -40,7 +40,7 @@ export class ProblemsService {
     return this.problemsRepository.find({
       where: { contestId },
       relations: ['testcases'],
-      order: { order: 'ASC' },
+      order: { id: 'ASC' },
     });
   }
 

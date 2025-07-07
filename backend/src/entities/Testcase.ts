@@ -2,6 +2,8 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
+  CreateDateColumn,
+  UpdateDateColumn,
   ManyToOne,
   JoinColumn,
 } from "typeorm";
@@ -15,17 +17,23 @@ export class Testcase {
   @Column({ name: "problem_id" })
   problemId: number;
 
-  @Column({ type: "text" })
+  @Column("text")
   input: string;
 
-  @Column({ type: "text" })
+  @Column("text")
   output: string;
 
   @Column({ name: "is_sample", default: false })
   isSample: boolean;
 
-  @Column({ default: 1 })
-  order: number;
+  @Column({ name: "order_index", default: 0 })
+  orderIndex: number;
+
+  @CreateDateColumn({ name: "created_at" })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: "updated_at" })
+  updatedAt: Date;
 
   // Relations
   @ManyToOne(() => Problem, (problem) => problem.testcases)

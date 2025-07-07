@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  UpdateDateColumn,
   OneToMany,
 } from "typeorm";
 import { Room } from "./Room";
@@ -13,23 +14,26 @@ export class Contest {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ length: 200 })
+  @Column()
   title: string;
 
-  @Column({ type: "text" })
+  @Column("text")
   description: string;
 
-  @Column({ name: "start_time", type: "timestamp" })
+  @Column({ name: "start_time" })
   startTime: Date;
 
-  @Column({ name: "end_time", type: "timestamp" })
+  @Column({ name: "end_time" })
   endTime: Date;
 
-  @Column({ default: true })
+  @Column({ name: "is_active", default: true })
   isActive: boolean;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
+
+  @UpdateDateColumn({ name: "updated_at" })
+  updatedAt: Date;
 
   // Relations
   @OneToMany(() => Room, (room) => room.contest)

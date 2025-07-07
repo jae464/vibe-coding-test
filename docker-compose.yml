@@ -107,7 +107,7 @@ services:
       NEXT_PUBLIC_API_URL: http://localhost:3001
       NEXT_PUBLIC_WS_URL: ws://localhost:3001
     ports:
-      - "3000:3000"
+      - "3002:3002"
     volumes:
       - ./frontend:/app
       - /app/node_modules

@@ -3,56 +3,62 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  UpdateDateColumn,
   ManyToOne,
-  OneToMany,
   JoinColumn,
+  OneToMany,
 } from "typeorm";
 import { Contest } from "./Contest";
+import { Room } from "./Room";
 import { Submission } from "./Submission";
 import { Testcase } from "./Testcase";
+
+export enum ProblemDifficulty {
+  EASY = "EASY",
+  MEDIUM = "MEDIUM",
+  HARD = "HARD",
+}
 
 @Entity()
 export class Problem {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: "contest_id" })
-  contestId: number;
-
-  @Column({ length: 200 })
+  @Column()
   title: string;
 
-  @Column({ type: "text" })
+  @Column("text")
   description: string;
 
-  @Column({ name: "input_description", type: "text" })
-  inputDescription: string;
+  @Column({
+    type: "enum",
+    enum: ProblemDifficulty,
+    default: ProblemDifficulty.EASY,
+  })
+  difficulty: ProblemDifficulty;
 
-  @Column({ name: "output_description", type: "text" })
-  outputDescription: string;
+  @Column({ name: "time_limit", default: 1000 })
+  timeLimit: number;
 
-  @Column({ name: "sample_input", type: "text" })
-  sampleInput: string;
+  @Column({ name: "memory_limit", default: 128 })
+  memoryLimit: number;
 
-  @Column({ name: "sample_output", type: "text" })
-  sampleOutput: string;
-
-  @Column({ default: 1 })
-  order: number;
-
-  @Column({ default: 1000 })
-  timeLimit: number; // milliseconds
-
-  @Column({ default: 128 })
-  memoryLimit: number; // MB
+  @Column({ name: "contest_id", nullable: true })
+  contestId?: number;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
 
+  @UpdateDateColumn({ name: "updated_at" })
+  updatedAt: Date;
+
   // Relations
   @ManyToOne(() => Contest, (contest) => contest.problems)
   @JoinColumn({ name: "contest_id" })
-  contest: Contest;
+  contest?: Contest;
+
+  @OneToMany(() => Room, (room) => room.problem)
+  rooms: Room[];
 
   @OneToMany(() => Submission, (submission) => submission.problem)
   submissions: Submission[];

@@ -90,19 +90,10 @@ export class RoomsService {
     await this.roomUsersRepository.remove(roomUser);
   }
 
-  async updateCode(roomId: number, code: string, editorId: number): Promise<Room> {
-    const room = await this.findOne(roomId);
-    
-    room.lastCode = code;
-    room.lastEditorId = editorId;
-    
-    const updatedRoom = await this.roomsRepository.save(room);
-
+  async updateCode(roomId: number, code: string, editorId: number): Promise<void> {
     // WebSocket을 통해 코드 변경을 브로드캐스트
     // TODO: 사용자 정보를 가져와서 editorName 전달
     await this.roomGateway.broadcastCodeChange(roomId, code, editorId, 'Unknown User');
-
-    return updatedRoom;
   }
 
   async sendChatMessage(roomId: number, userId: number, username: string, message: string): Promise<void> {

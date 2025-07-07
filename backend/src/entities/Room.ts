@@ -3,12 +3,13 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  UpdateDateColumn,
   ManyToOne,
-  OneToMany,
   JoinColumn,
+  OneToMany,
 } from "typeorm";
 import { Contest } from "./Contest";
-import { User } from "./User";
+import { Problem } from "./Problem";
 import { RoomUser } from "./RoomUser";
 import { Submission } from "./Submission";
 import { ChatMessage } from "./ChatMessage";
@@ -18,32 +19,35 @@ export class Room {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ length: 100 })
+  @Column()
   name: string;
 
   @Column({ name: "contest_id" })
   contestId: number;
 
-  @Column({ name: "created_by" })
-  createdBy: number;
+  @Column({ name: "problem_id" })
+  problemId: number;
 
-  @Column({ type: "text", nullable: true })
-  lastCode: string;
+  @Column({ name: "max_participants", default: 10 })
+  maxParticipants: number;
 
-  @Column({ name: "last_editor_id", nullable: true })
-  lastEditorId: number;
+  @Column({ name: "is_active", default: true })
+  isActive: boolean;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
+
+  @UpdateDateColumn({ name: "updated_at" })
+  updatedAt: Date;
 
   // Relations
   @ManyToOne(() => Contest, (contest) => contest.rooms)
   @JoinColumn({ name: "contest_id" })
   contest: Contest;
 
-  @ManyToOne(() => User, (user) => user.roomUsers)
-  @JoinColumn({ name: "created_by" })
-  creator: User;
+  @ManyToOne(() => Problem, (problem) => problem.rooms)
+  @JoinColumn({ name: "problem_id" })
+  problem: Problem;
 
   @OneToMany(() => RoomUser, (roomUser) => roomUser.room)
   roomUsers: RoomUser[];
@@ -51,6 +55,6 @@ export class Room {
   @OneToMany(() => Submission, (submission) => submission.room)
   submissions: Submission[];
 
-  @OneToMany(() => ChatMessage, (chatMessage) => chatMessage.room)
-  chatMessages: ChatMessage[];
+  @OneToMany(() => ChatMessage, (message) => message.room)
+  messages: ChatMessage[];
 }
