@@ -35,6 +35,8 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     { userId: number; username: string; roomId: number; clientId: string }
   >();
 
+  private roomCodeStates = new Map<number, string>();
+
   handleConnection(client: Socket) {
     console.log(`[WebSocket] Client connected: ${client.id}`);
     console.log(`[WebSocket] Client auth:`, client.handshake.auth);
@@ -104,6 +106,17 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       timestamp: new Date(),
     });
 
+    // 현재 방의 코드 상태 전송
+    const currentCode = this.roomCodeStates.get(roomId) || "";
+    client.emit("room_code_state", {
+      code: currentCode,
+      timestamp: new Date(),
+    });
+    console.log(
+      `[WebSocket] Sent room_code_state to new user:`,
+      currentCode.substring(0, 100) + "..."
+    );
+
     console.log(`[WebSocket] User ${username} joined room ${roomId}`);
   }
 
@@ -146,6 +159,9 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log(`[WebSocket] code_change event received:`, data);
 
     const { roomId, code, editorId, editorName, clientId } = data;
+
+    // 방의 코드 상태 업데이트
+    this.roomCodeStates.set(roomId, code);
 
     // 방의 다른 사용자들에게 코드 변경 알림
     client.to(`room_${roomId}`).emit("code_updated", {

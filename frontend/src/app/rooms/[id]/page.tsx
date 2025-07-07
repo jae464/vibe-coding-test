@@ -102,6 +102,12 @@ export default function RoomPage() {
       }));
       setParticipants(participantUsers);
     },
+    onRoomCodeState: (code: string) => {
+      console.log("방 코드 상태 이벤트:", code.substring(0, 100) + "...");
+      if (code) {
+        setCode(code);
+      }
+    },
     onChatMessage: (message: ChatMessage) => {
       setChatMessages((prev) => [...prev, message]);
     },
