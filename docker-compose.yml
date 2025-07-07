@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # PostgreSQL 데이터베이스
@@ -13,7 +13,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+      # - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - algorithm-network
     healthcheck:
@@ -51,19 +51,19 @@ services:
       DB_USERNAME: postgres
       DB_PASSWORD: password
       DB_NAME: algorithm_contest
-      
+
       # Redis 설정
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      
+
       # JWT 설정
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
       JWT_EXPIRES_IN: 7d
-      
+
       # 서버 설정
       PORT: 3001
       NODE_ENV: development
-      
+
       # 채점 시스템 설정
       # JUDGE_SERVICE_URL: http://judge:3002
     ports:
@@ -126,4 +126,4 @@ volumes:
 
 networks:
   algorithm-network:
-    driver: bridge 
+    driver: bridge

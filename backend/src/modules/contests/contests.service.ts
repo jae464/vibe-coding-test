@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { Contest } from '../../entities/Contest';
 import { CreateContestDto } from './dto/create-contest.dto';
 import { UpdateContestDto } from './dto/update-contest.dto';
@@ -67,8 +67,8 @@ export class ContestsService {
     return this.contestsRepository.find({
       where: {
         isActive: true,
-        startTime: { $lte: now },
-        endTime: { $gte: now },
+        startTime: LessThanOrEqual(now),
+        endTime: MoreThanOrEqual(now),
       },
       relations: ['problems'],
       order: { startTime: 'ASC' },

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { exec } from 'child_process';
+import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -28,6 +28,9 @@ export class DockerJudgeService {
     const workDir = path.join(this.tempDir, crypto.randomBytes(8).toString('hex'));
     fs.mkdirSync(workDir, { recursive: true });
     
+    // Docker 이미지 이름 정의
+    const imageName = `judge-${submissionId}`;
+    
     try {
       // 코드 파일 생성
       const fileName = this.getFileName(language);
@@ -39,7 +42,6 @@ export class DockerJudgeService {
       this.createDockerfile(dockerfilePath, language, fileName);
 
       // Docker 이미지 빌드
-      const imageName = `judge-${submissionId}`;
       await this.buildDockerImage(workDir, imageName);
 
       const testcaseResults = [];
@@ -181,46 +183,79 @@ CMD ["./program"]
     timeLimit: number,
     memoryLimit: number,
     testcaseId: number,
-  ) {
+  ): Promise<any> {
     const startTime = Date.now();
     
-    try {
-      // Docker 컨테이너 실행
-      const { stdout, stderr } = await execAsync(
-        `docker run --rm --memory=${memoryLimit}m --cpus=1 ${imageName}`,
-        {
-          input: input,
-          timeout: timeLimit,
-          maxBuffer: 1024 * 1024, // 1MB
-        }
-      );
+    return new Promise((resolve) => {
+      try {
+        // Docker 컨테이너 실행
+        const dockerProcess = spawn('docker', [
+          'run', '--rm', 
+          `--memory=${memoryLimit}m`, 
+          '--cpus=1', 
+          imageName
+        ], {
+          timeout: timeLimit * 1000, // 초를 밀리초로 변환
+        });
 
-      const executionTime = Date.now() - startTime;
-      const actualOutput = stdout.trim();
-      const isCorrect = this.compareOutput(actualOutput, expectedOutput);
+        let stdout = '';
+        let stderr = '';
 
-      return {
-        testcaseId,
-        input,
-        expectedOutput,
-        actualOutput,
-        isCorrect,
-        executionTime,
-        memoryUsed: 0, // Docker에서 메모리 사용량 측정은 복잡함
-        errorMessage: stderr || undefined,
-      };
-    } catch (error) {
-      return {
-        testcaseId,
-        input,
-        expectedOutput,
-        actualOutput: '',
-        isCorrect: false,
-        executionTime: 0,
-        memoryUsed: 0,
-        errorMessage: error.message,
-      };
-    }
+        dockerProcess.stdout.on('data', (data) => {
+          stdout += data.toString();
+        });
+
+        dockerProcess.stderr.on('data', (data) => {
+          stderr += data.toString();
+        });
+
+        dockerProcess.on('close', (code) => {
+          const executionTime = Date.now() - startTime;
+          const actualOutput = stdout.trim();
+          const isCorrect = this.compareOutput(actualOutput, expectedOutput);
+
+          resolve({
+            testcaseId,
+            input,
+            expectedOutput,
+            actualOutput,
+            isCorrect,
+            executionTime,
+            memoryUsed: 0, // Docker에서 메모리 사용량 측정은 복잡함
+            errorMessage: stderr || undefined,
+          });
+        });
+
+        dockerProcess.on('error', (error) => {
+          resolve({
+            testcaseId,
+            input,
+            expectedOutput,
+            actualOutput: '',
+            isCorrect: false,
+            executionTime: 0,
+            memoryUsed: 0,
+            errorMessage: error.message,
+          });
+        });
+
+        // 입력 전송
+        dockerProcess.stdin.write(input);
+        dockerProcess.stdin.end();
+
+      } catch (error) {
+        resolve({
+          testcaseId,
+          input,
+          expectedOutput,
+          actualOutput: '',
+          isCorrect: false,
+          executionTime: 0,
+          memoryUsed: 0,
+          errorMessage: error.message,
+        });
+      }
+    });
   }
 
   private compareOutput(actual: string, expected: string): boolean {

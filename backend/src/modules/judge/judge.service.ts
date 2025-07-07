@@ -7,7 +7,7 @@ import { Testcase } from '../../entities/Testcase';
 import { JudgeRequestDto } from './dto/judge-request.dto';
 import { JudgeResultDto, JudgeStatus } from './dto/judge-result.dto';
 import { RoomsService } from '../rooms/rooms.service';
-import { exec } from 'child_process';
+import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -180,46 +180,78 @@ export class JudgeService {
     timeLimit: number,
     memoryLimit: number,
     testcaseId: number,
-  ) {
-    try {
-      const startTime = Date.now();
-      
-      // 언어별 실행 명령어 생성
-      const command = this.buildExecutionCommand(filePath, language);
-      
-      // 실행
-      const { stdout, stderr } = await execAsync(command, {
-        timeout: timeLimit,
-        input: input,
-        maxBuffer: 1024 * 1024, // 1MB
-      });
+  ): Promise<any> {
+    const startTime = Date.now();
+    
+    return new Promise((resolve) => {
+      try {
+        // 언어별 실행 명령어 생성
+        const command = this.buildExecutionCommand(filePath, language);
+        const [cmd, ...args] = command.split(' ');
+        
+        // 실행
+        const process = spawn(cmd, args, {
+          timeout: timeLimit * 1000, // 초를 밀리초로 변환
+        });
 
-      const executionTime = Date.now() - startTime;
-      const actualOutput = stdout.trim();
-      const isCorrect = this.compareOutput(actualOutput, expectedOutput);
+        let stdout = '';
+        let stderr = '';
 
-      return {
-        testcaseId,
-        input,
-        expectedOutput,
-        actualOutput,
-        isCorrect,
-        executionTime,
-        memoryUsed: 0, // TODO: 메모리 사용량 측정 구현
-        errorMessage: stderr || undefined,
-      };
-    } catch (error) {
-      return {
-        testcaseId,
-        input,
-        expectedOutput,
-        actualOutput: '',
-        isCorrect: false,
-        executionTime: 0,
-        memoryUsed: 0,
-        errorMessage: error.message,
-      };
-    }
+        process.stdout.on('data', (data) => {
+          stdout += data.toString();
+        });
+
+        process.stderr.on('data', (data) => {
+          stderr += data.toString();
+        });
+
+        process.on('close', (code) => {
+          const executionTime = Date.now() - startTime;
+          const actualOutput = stdout.trim();
+          const isCorrect = this.compareOutput(actualOutput, expectedOutput);
+
+          resolve({
+            testcaseId,
+            input,
+            expectedOutput,
+            actualOutput,
+            isCorrect,
+            executionTime,
+            memoryUsed: 0, // TODO: 메모리 사용량 측정 구현
+            errorMessage: stderr || undefined,
+          });
+        });
+
+        process.on('error', (error) => {
+          resolve({
+            testcaseId,
+            input,
+            expectedOutput,
+            actualOutput: '',
+            isCorrect: false,
+            executionTime: 0,
+            memoryUsed: 0,
+            errorMessage: error.message,
+          });
+        });
+
+        // 입력 전송
+        process.stdin.write(input);
+        process.stdin.end();
+
+      } catch (error) {
+        resolve({
+          testcaseId,
+          input,
+          expectedOutput,
+          actualOutput: '',
+          isCorrect: false,
+          executionTime: 0,
+          memoryUsed: 0,
+          errorMessage: error.message,
+        });
+      }
+    });
   }
 
   private buildExecutionCommand(filePath: string, language: string): string {

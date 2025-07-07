@@ -88,8 +88,9 @@ export class UsersService {
     }
 
     if (updateUserDto.password) {
-      updateUserDto.passwordHash = await bcrypt.hash(updateUserDto.password, 10);
+      const passwordHash = await bcrypt.hash(updateUserDto.password, 10);
       delete updateUserDto.password;
+      updateUserDto['passwordHash'] = passwordHash;
     }
 
     await this.usersRepository.update(id, updateUserDto);

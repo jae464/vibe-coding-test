@@ -32,7 +32,7 @@ RUN npm ci --only=production && npm cache clean --force
 
 # 빌드된 파일 복사
 COPY --from=base /app/.next ./.next
-COPY --from=base /app/public ./public
+# COPY --from=base /app/public ./public
 
 # 포트 노출
 EXPOSE 3000
