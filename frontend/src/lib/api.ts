@@ -186,9 +186,7 @@ export const roomsAPI = {
     return response.data;
   },
 
-  create: async (
-    data: Omit<Room, "id" | "createdAt" | "updatedAt">
-  ): Promise<ApiResponse<Room>> => {
+  create: async (data: any): Promise<ApiResponse<Room>> => {
     const response = await apiClient.post("/rooms", data);
     return response.data;
   },

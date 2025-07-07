@@ -18,7 +18,7 @@ export default function CreateRoomPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const params = useParams();
-  const { token } = useAuthStore();
+  const { token, user } = useAuthStore();
   const contestId = params.id as string;
 
   useEffect(() => {
@@ -92,13 +92,20 @@ export default function CreateRoomPage() {
       setLoading(true);
       setError(null);
 
-      const response = await roomsAPI.create({
+      const roomData = {
         name: formData.name.trim(),
-        contestId: contestId,
-        problemId: formData.problemId,
+        contestId: Number(contestId) as any,
+        problemId: Number(formData.problemId) as any,
         maxParticipants: formData.maxParticipants,
-        isActive: true,
-      });
+        createdBy: Number(user?.id) as any,
+      };
+
+      console.log("방 생성 데이터:", roomData);
+      console.log("user?.id:", user?.id);
+      console.log("contestId:", contestId);
+      console.log("formData.problemId:", formData.problemId);
+
+      const response = await roomsAPI.create(roomData);
 
       if (response.success && response.data) {
         router.push(`/rooms/${response.data.id}`);

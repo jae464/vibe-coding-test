@@ -157,4 +157,12 @@ export class RoomsService {
     const room = await this.findOne(id);
     await this.roomsRepository.remove(room);
   }
+
+  async getParticipants(roomId: number): Promise<RoomUser[]> {
+    return this.roomUsersRepository.find({
+      where: { roomId },
+      relations: ["user"],
+      order: { joinedAt: "ASC" },
+    });
+  }
 }
