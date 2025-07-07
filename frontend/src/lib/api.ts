@@ -21,7 +21,10 @@ const apiClient: AxiosInstance = axios.create({
 // 요청 인터셉터 - 토큰 추가
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    // Zustand store에서 토큰 가져오기
+    const authStore = JSON.parse(localStorage.getItem("auth-storage") || "{}");
+    const token = authStore.state?.token;
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
