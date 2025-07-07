@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useAuthStore } from "@/store/auth";
-import { Code, Trophy, Users, LogOut, User, Terminal } from "lucide-react";
+import { Code, Trophy, Users, LogOut, User } from "lucide-react";
 
 const Navigation = () => {
   const { user, token, logout } = useAuthStore();
@@ -53,16 +53,6 @@ const Navigation = () => {
               <Users className="h-4 w-4" />
               <span>방</span>
             </Link>
-
-            {isAuthenticated && (
-              <Link
-                href="/terminal"
-                className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1"
-              >
-                <Terminal className="h-4 w-4" />
-                <span>터미널</span>
-              </Link>
-            )}
 
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">

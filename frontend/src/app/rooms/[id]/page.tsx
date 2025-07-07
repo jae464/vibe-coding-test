@@ -1,11 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
 import { useSocket } from "@/hooks/useSocket";
-import { roomsAPI, submissionsAPI, chatAPI } from "@/lib/api";
-import { Room, Problem, Submission, ChatMessage, User } from "@/types";
+import { roomsAPI, submissionsAPI, chatAPI, terminalAPI } from "@/lib/api";
+import {
+  Room,
+  Problem,
+  Submission,
+  ChatMessage,
+  User,
+  TerminalSession,
+  TerminalCommand,
+} from "@/types";
 import Navigation from "@/components/layout/Navigation";
 import {
   Send,
@@ -17,6 +25,11 @@ import {
   XCircle,
   Clock,
   Zap,
+  Terminal,
+  Square,
+  FileText,
+  Settings,
+  Trash2,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -44,6 +57,17 @@ export default function RoomPage() {
   const [activeTab, setActiveTab] = useState<
     "problem" | "chat" | "submissions"
   >("problem");
+
+  // 터미널 관련 상태
+  const [terminalSession, setTerminalSession] =
+    useState<TerminalSession | null>(null);
+  const [terminalCommands, setTerminalCommands] = useState<TerminalCommand[]>(
+    []
+  );
+  const [currentCommand, setCurrentCommand] = useState("");
+  const [isTerminalLoading, setIsTerminalLoading] = useState(false);
+  const [showTerminal, setShowTerminal] = useState(false);
+  const terminalRef = useRef<HTMLDivElement>(null);
 
   // WebSocket 연결
   const { sendCodeChange, sendChatMessage, connected, clientId } = useSocket({
@@ -116,6 +140,129 @@ export default function RoomPage() {
       console.log("제출 결과:", result);
     },
   });
+
+  // 터미널 세션 생성
+  const createTerminalSession = async () => {
+    try {
+      setIsTerminalLoading(true);
+      const response = await terminalAPI.createSession(language);
+      if (response.success && response.data) {
+        setTerminalSession(response.data);
+        setTerminalCommands([]);
+        setShowTerminal(true);
+      }
+    } catch (error) {
+      console.error("터미널 세션 생성 실패:", error);
+    } finally {
+      setIsTerminalLoading(false);
+    }
+  };
+
+  // 명령어 실행
+  const executeCommand = async () => {
+    if (!terminalSession || !currentCommand.trim()) return;
+
+    try {
+      const command = currentCommand.trim();
+      setCurrentCommand("");
+
+      // 명령어 히스토리에 추가
+      const commandEntry: TerminalCommand = {
+        sessionId: terminalSession.id,
+        command,
+        output: "",
+        exitCode: 0,
+      };
+      setTerminalCommands((prev) => [...prev, commandEntry]);
+
+      const response = await terminalAPI.executeCommand(
+        terminalSession.id,
+        command
+      );
+      if (response.success && response.data) {
+        // 결과 업데이트
+        setTerminalCommands((prev) =>
+          prev.map((cmd) =>
+            cmd.command === command ? { ...cmd, ...response.data } : cmd
+          )
+        );
+      }
+    } catch (error) {
+      console.error("명령어 실행 실패:", error);
+    }
+  };
+
+  // 코드를 파일로 저장하고 실행
+  const saveAndRunCode = async () => {
+    if (!terminalSession || !code.trim()) return;
+
+    try {
+      const filename = `main.${getFileExtension(language)}`;
+
+      // 코드를 파일로 저장
+      await terminalAPI.createFile(terminalSession.id, filename, code);
+
+      // 실행 명령어 생성
+      const runCommand = getRunCommand(language, filename);
+
+      // 명령어 실행
+      const commandEntry: TerminalCommand = {
+        sessionId: terminalSession.id,
+        command: runCommand,
+        output: "",
+        exitCode: 0,
+      };
+      setTerminalCommands((prev) => [...prev, commandEntry]);
+
+      const response = await terminalAPI.executeCommand(
+        terminalSession.id,
+        runCommand
+      );
+      if (response.success && response.data) {
+        setTerminalCommands((prev) =>
+          prev.map((cmd) =>
+            cmd.command === runCommand ? { ...cmd, ...response.data } : cmd
+          )
+        );
+      }
+    } catch (error) {
+      console.error("코드 실행 실패:", error);
+    }
+  };
+
+  // 파일 확장자 가져오기
+  const getFileExtension = (lang: string) => {
+    const extensions = {
+      javascript: "js",
+      python: "py",
+      java: "java",
+      cpp: "cpp",
+      bash: "sh",
+    };
+    return extensions[lang as keyof typeof extensions] || "js";
+  };
+
+  // 실행 명령어 가져오기
+  const getRunCommand = (lang: string, filename: string) => {
+    const commands = {
+      javascript: `node ${filename}`,
+      python: `python ${filename}`,
+      java: `javac ${filename} && java ${filename.replace(".java", "")}`,
+      cpp: `g++ ${filename} -o ${filename.replace(
+        ".cpp",
+        ""
+      )} && ./${filename.replace(".cpp", "")}`,
+      bash: `bash ${filename}`,
+    };
+    return commands[lang as keyof typeof commands] || `node ${filename}`;
+  };
+
+  // 터미널 출력 자동 스크롤
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }
+  }, [terminalCommands]);
 
   // 방 정보 로드
   useEffect(() => {
@@ -203,35 +350,44 @@ export default function RoomPage() {
     [sendCodeChange]
   );
 
-  // 채팅 메시지 전송
   const handleSendMessage = () => {
-    if (newMessage.trim()) {
+    if (newMessage.trim() && connected) {
       sendChatMessage(newMessage);
       setNewMessage("");
     }
   };
 
-  // 코드 제출
   const handleSubmit = async () => {
-    if (!code.trim() || !user?.id) return;
+    if (!problem || !code.trim()) return;
 
     setIsSubmitting(true);
     try {
       const response = await submissionsAPI.create({
-        roomId,
-        problemId: problem?.id || "",
-        userId: user.id,
-        code,
-        language,
+        problemId: problem.id,
+        roomId: roomId,
+        userId: user!.id,
+        code: code,
+        language: language,
       });
 
-      if (response.success && response.data) {
-        setSubmissions((prev) => [response.data!, ...prev]);
+      if (response.success) {
+        console.log("제출 성공:", response.data);
+        // 제출 목록 새로고침
+        const submissionsResponse = await submissionsAPI.getByRoom(roomId);
+        if (submissionsResponse.success && submissionsResponse.data) {
+          setSubmissions(submissionsResponse.data);
+        }
       }
     } catch (error) {
       console.error("제출 실패:", error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      executeCommand();
     }
   };
 
@@ -244,8 +400,11 @@ export default function RoomPage() {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navigation />
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">방 정보를 불러오는 중...</p>
+          </div>
         </div>
       </div>
     );
@@ -255,31 +414,24 @@ export default function RoomPage() {
     <div className="min-h-screen bg-gray-50">
       <Navigation />
 
-      <div className="flex h-[calc(100vh-4rem)]">
-        {/* 왼쪽 패널 - 코드 에디터 */}
-        <div className="flex-1 flex flex-col">
-          {/* 헤더 */}
-          <div className="bg-white border-b px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">
-                  {room.name}
-                </h1>
-                <p className="text-sm text-gray-600">
-                  {problem?.title} • {participants.length}명 참가
-                </p>
+      <div className="h-[calc(100vh-4rem)] flex flex-col">
+        {/* 헤더 */}
+        <div className="bg-white border-b px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{room.name}</h1>
+              <p className="text-gray-600 mt-1">
+                {problem?.title || "문제가 선택되지 않음"}
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Users className="h-5 w-5 text-gray-500" />
+                <span className="text-sm text-gray-600">
+                  {participants.length}명 참가
+                </span>
               </div>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <div
-                    className={`w-2 h-2 rounded-full ${
-                      connected ? "bg-green-500" : "bg-red-500"
-                    }`}
-                  ></div>
-                  <span className="text-sm text-gray-600">
-                    {connected ? "연결됨" : "연결 중..."}
-                  </span>
-                </div>
+              <div className="flex items-center space-x-2">
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
@@ -289,202 +441,259 @@ export default function RoomPage() {
                   <option value="python">Python</option>
                   <option value="java">Java</option>
                   <option value="cpp">C++</option>
+                  <option value="bash">Bash</option>
                 </select>
-                <button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting || !code.trim()}
-                  className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                >
-                  <Play className="h-4 w-4" />
-                  <span>{isSubmitting ? "제출 중..." : "제출"}</span>
-                </button>
               </div>
             </div>
           </div>
-
-          {/* 코드 에디터 */}
-          <div className="flex-1">
-            <MonacoEditor
-              height="100%"
-              language={language}
-              value={code}
-              onChange={handleCodeChange}
-              theme="vs-dark"
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                lineNumbers: "on",
-                roundedSelection: false,
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-              }}
-            />
-          </div>
         </div>
 
-        {/* 오른쪽 패널 */}
-        <div className="w-96 bg-white border-l flex flex-col">
-          {/* 탭 헤더 */}
-          <div className="flex border-b">
-            <button
-              onClick={() => setActiveTab("problem")}
-              className={`flex-1 px-4 py-3 text-sm font-medium ${
-                activeTab === "problem"
-                  ? "text-primary-600 border-b-2 border-primary-600"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <Code className="h-4 w-4 inline mr-2" />
-              문제
-            </button>
-            <button
-              onClick={() => setActiveTab("chat")}
-              className={`flex-1 px-4 py-3 text-sm font-medium ${
-                activeTab === "chat"
-                  ? "text-primary-600 border-b-2 border-primary-600"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <MessageSquare className="h-4 w-4 inline mr-2" />
-              채팅
-            </button>
-            <button
-              onClick={() => setActiveTab("submissions")}
-              className={`flex-1 px-4 py-3 text-sm font-medium ${
-                activeTab === "submissions"
-                  ? "text-primary-600 border-b-2 border-primary-600"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <CheckCircle className="h-4 w-4 inline mr-2" />
-              제출
-            </button>
-          </div>
+        {/* 메인 컨텐츠 */}
+        <div className="flex-1 flex">
+          {/* 왼쪽 패널 - 코드 에디터 */}
+          <div className="flex-1 flex flex-col">
+            {/* 코드 에디터 */}
+            <div className="flex-1 bg-white border-r">
+              <MonacoEditor
+                height="100%"
+                language={language}
+                value={code}
+                onChange={handleCodeChange}
+                theme="vs-dark"
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 14,
+                  lineNumbers: "on",
+                  roundedSelection: false,
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                }}
+              />
+            </div>
 
-          {/* 탭 컨텐츠 */}
-          <div className="flex-1 overflow-hidden">
-            {activeTab === "problem" && (
-              <div className="p-4 h-full overflow-y-auto">
-                {problem ? (
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">
-                      {problem.title}
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="bg-gray-50 p-3 rounded-md">
-                        <h4 className="font-medium mb-2">문제 설명</h4>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                          {problem.description}
-                        </p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-gray-50 p-3 rounded-md">
-                          <h4 className="font-medium mb-1">시간 제한</h4>
-                          <p className="text-sm text-gray-600">
-                            {problem.timeLimit}ms
-                          </p>
-                        </div>
-                        <div className="bg-gray-50 p-3 rounded-md">
-                          <h4 className="font-medium mb-1">메모리 제한</h4>
-                          <p className="text-sm text-gray-600">
-                            {problem.memoryLimit}MB
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+            {/* 터미널 패널 */}
+            <div className="h-64 bg-white border-t border-gray-200">
+              <div className="flex items-center justify-between p-3 border-b border-gray-200">
+                <div className="flex items-center space-x-2">
+                  <Terminal className="h-4 w-4 text-green-500" />
+                  <span className="text-sm font-medium text-gray-900">
+                    터미널
+                  </span>
+                  {terminalSession && (
+                    <span className="text-xs text-gray-500">
+                      ({terminalSession.id.slice(0, 8)}...)
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  {!terminalSession ? (
+                    <button
+                      onClick={createTerminalSession}
+                      disabled={isTerminalLoading}
+                      className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-3 py-1 rounded text-xs font-medium flex items-center space-x-1"
+                    >
+                      <Terminal className="h-3 w-3" />
+                      <span>세션 시작</span>
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={saveAndRunCode}
+                        disabled={!code.trim()}
+                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-3 py-1 rounded text-xs font-medium flex items-center space-x-1"
+                      >
+                        <Play className="h-3 w-3" />
+                        <span>실행</span>
+                      </button>
+                      <button
+                        onClick={() => setTerminalCommands([])}
+                        className="text-gray-500 hover:text-gray-700 p-1"
+                        title="출력 지우기"
+                      >
+                        <Square className="h-3 w-3" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* 터미널 출력 */}
+              <div
+                ref={terminalRef}
+                className="h-40 bg-black text-green-400 p-3 font-mono text-xs overflow-y-auto"
+              >
+                {!terminalSession ? (
+                  <div className="text-gray-500">
+                    터미널 세션을 시작하여 코드를 실행하세요.
                   </div>
                 ) : (
-                  <div className="text-center text-gray-500 py-8">
-                    문제 정보를 불러오는 중...
-                  </div>
+                  <>
+                    <div className="mb-2">
+                      <span className="text-blue-400">$</span> 터미널 세션이
+                      시작되었습니다.
+                    </div>
+
+                    {terminalCommands.map((cmd, index) => (
+                      <div key={index} className="mb-2">
+                        <div className="mb-1">
+                          <span className="text-blue-400">$</span> {cmd.command}
+                        </div>
+                        {cmd.output && (
+                          <div className="text-green-400 whitespace-pre-wrap">
+                            {cmd.output}
+                          </div>
+                        )}
+                        {cmd.error && (
+                          <div className="text-red-400 whitespace-pre-wrap">
+                            {cmd.error}
+                          </div>
+                        )}
+                        {cmd.exitCode !== 0 && (
+                          <div className="text-red-400">
+                            Exit code: {cmd.exitCode}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </>
                 )}
               </div>
-            )}
 
-            {activeTab === "chat" && (
-              <div className="flex flex-col h-full">
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {chatMessages.map((message) => {
-                    const isOwnMessage = message.userId === user?.id;
-                    const messageTime = message.createdAt
-                      ? new Date(message.createdAt).toLocaleTimeString(
-                          "ko-KR",
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }
-                        )
-                      : message.timestamp
-                      ? new Date(message.timestamp).toLocaleTimeString(
-                          "ko-KR",
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }
-                        )
-                      : new Date().toLocaleTimeString("ko-KR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        });
+              {/* 명령어 입력 */}
+              {terminalSession && (
+                <div className="border-t border-gray-700 p-3">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-blue-400 font-mono text-xs">$</span>
+                    <input
+                      type="text"
+                      value={currentCommand}
+                      onChange={(e) => setCurrentCommand(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      placeholder="명령어를 입력하세요..."
+                      className="flex-1 bg-transparent border-none outline-none text-green-400 font-mono text-xs"
+                    />
+                    <button
+                      onClick={executeCommand}
+                      disabled={!currentCommand.trim()}
+                      className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                    >
+                      <Play className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
-                    return (
+          {/* 오른쪽 패널 - 사이드바 */}
+          <div className="w-80 bg-white border-l border-gray-200">
+            <div className="flex border-b border-gray-200">
+              <button
+                onClick={() => setActiveTab("problem")}
+                className={`flex-1 px-4 py-3 text-sm font-medium ${
+                  activeTab === "problem"
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <Code className="h-4 w-4 inline mr-2" />
+                문제
+              </button>
+              <button
+                onClick={() => setActiveTab("chat")}
+                className={`flex-1 px-4 py-3 text-sm font-medium ${
+                  activeTab === "chat"
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <MessageSquare className="h-4 w-4 inline mr-2" />
+                채팅
+              </button>
+              <button
+                onClick={() => setActiveTab("submissions")}
+                className={`flex-1 px-4 py-3 text-sm font-medium ${
+                  activeTab === "submissions"
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <Zap className="h-4 w-4 inline mr-2" />
+                제출
+              </button>
+            </div>
+
+            <div className="p-4">
+              {activeTab === "problem" && (
+                <div>
+                  {problem ? (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                        {problem.title}
+                      </h3>
+                      <div className="prose prose-sm max-w-none">
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: problem.description || "",
+                          }}
+                        />
+                      </div>
+                      <div className="mt-4">
+                        <button
+                          onClick={handleSubmit}
+                          disabled={isSubmitting || !code.trim()}
+                          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center space-x-2"
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              <span>제출 중...</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-4 w-4" />
+                              <span>제출</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center text-gray-500">
+                      <Code className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p>문제가 선택되지 않았습니다.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "chat" && (
+                <div className="h-full flex flex-col">
+                  <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+                    {chatMessages.map((message, index) => (
                       <div
-                        key={message.id}
+                        key={index}
                         className={`flex ${
-                          isOwnMessage ? "justify-end" : "justify-start"
+                          message.userId === user?.id
+                            ? "justify-end"
+                            : "justify-start"
                         }`}
                       >
                         <div
-                          className={`flex ${
-                            isOwnMessage ? "flex-row-reverse" : "flex-row"
-                          } space-x-2 max-w-xs`}
+                          className={`max-w-xs px-3 py-2 rounded-lg ${
+                            message.userId === user?.id
+                              ? "bg-blue-600 text-white"
+                              : "bg-gray-200 text-gray-900"
+                          }`}
                         >
-                          {!isOwnMessage && (
-                            <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                              <span className="text-xs font-medium text-primary-600">
-                                {message.user?.username
-                                  ?.charAt(0)
-                                  .toUpperCase() || "U"}
-                              </span>
-                            </div>
-                          )}
-                          <div
-                            className={`flex flex-col ${
-                              isOwnMessage ? "items-end" : "items-start"
-                            }`}
-                          >
-                            <div
-                              className={`flex items-center space-x-2 ${
-                                isOwnMessage ? "flex-row-reverse" : "flex-row"
-                              }`}
-                            >
-                              {!isOwnMessage && (
-                                <span className="text-sm font-medium text-gray-900">
-                                  {message.user?.username ||
-                                    message.username ||
-                                    "Unknown User"}
-                                </span>
-                              )}
-                              <span className="text-xs text-gray-500">
-                                {messageTime}
-                              </span>
-                            </div>
-                            <div
-                              className={`mt-1 px-3 py-2 rounded-lg max-w-xs break-words ${
-                                isOwnMessage
-                                  ? "bg-primary-600 text-white"
-                                  : "bg-gray-100 text-gray-700"
-                              }`}
-                            >
-                              <p className="text-sm">{message.message}</p>
-                            </div>
+                          <div className="text-xs opacity-75 mb-1">
+                            {message.username}
                           </div>
+                          <div className="text-sm">{message.message}</div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-                <div className="border-t p-4">
+                    ))}
+                  </div>
                   <div className="flex space-x-2">
                     <input
                       type="text"
@@ -494,58 +703,65 @@ export default function RoomPage() {
                         e.key === "Enter" && handleSendMessage()
                       }
                       placeholder="메시지를 입력하세요..."
-                      className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm"
                     />
                     <button
                       onClick={handleSendMessage}
-                      className="bg-primary-600 text-white p-2 rounded-md hover:bg-primary-700"
+                      disabled={!newMessage.trim() || !connected}
+                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-3 py-2 rounded-md text-sm"
                     >
                       <Send className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {activeTab === "submissions" && (
-              <div className="p-4 h-full overflow-y-auto">
+              {activeTab === "submissions" && (
                 <div className="space-y-3">
                   {submissions.map((submission) => (
-                    <div key={submission.id} className="border rounded-lg p-3">
+                    <div
+                      key={submission.id}
+                      className="border border-gray-200 rounded-lg p-3"
+                    >
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium text-gray-900">
-                          {submission.user?.username}
+                          제출 #{submission.id.slice(0, 8)}
                         </span>
-                        <span className="text-xs text-gray-500">
-                          {new Date(submission.createdAt).toLocaleTimeString()}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        {submission.status === "ACCEPTED" ? (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                        ) : submission.status === "PENDING" ||
-                          submission.status === "RUNNING" ? (
-                          <Clock className="h-4 w-4 text-blue-500" />
-                        ) : (
-                          <XCircle className="h-4 w-4 text-red-500" />
-                        )}
-                        <span className="text-sm text-gray-700">
-                          {submission.status}
-                        </span>
-                      </div>
-                      {submission.executionTime && (
-                        <div className="flex items-center space-x-1 mt-1">
-                          <Zap className="h-3 w-3 text-gray-400" />
-                          <span className="text-xs text-gray-500">
-                            {submission.executionTime}ms
+                        <div className="flex items-center space-x-1">
+                          {submission.status === "ACCEPTED" ? (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          ) : submission.status === "WRONG_ANSWER" ? (
+                            <XCircle className="h-4 w-4 text-red-500" />
+                          ) : (
+                            <Clock className="h-4 w-4 text-yellow-500" />
+                          )}
+                          <span
+                            className={`text-xs font-medium ${
+                              submission.status === "ACCEPTED"
+                                ? "text-green-600"
+                                : submission.status === "WRONG_ANSWER"
+                                ? "text-red-600"
+                                : "text-yellow-600"
+                            }`}
+                          >
+                            {submission.status}
                           </span>
                         </div>
-                      )}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(submission.createdAt).toLocaleString()}
+                      </div>
                     </div>
                   ))}
+                  {submissions.length === 0 && (
+                    <div className="text-center text-gray-500 py-8">
+                      <Zap className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                      <p>아직 제출된 코드가 없습니다.</p>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
