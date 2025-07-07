@@ -106,6 +106,9 @@ export interface ChatMessage {
   message: string;
   createdAt: string;
   user?: User;
+  // WebSocket에서 전송되는 메시지용 필드
+  timestamp?: string;
+  username?: string;
 }
 
 // WebSocket 이벤트 타입

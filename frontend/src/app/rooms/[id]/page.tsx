@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
 import { useSocket } from "@/hooks/useSocket";
-import { roomsAPI, submissionsAPI } from "@/lib/api";
+import { roomsAPI, submissionsAPI, chatAPI } from "@/lib/api";
 import { Room, Problem, Submission, ChatMessage, User } from "@/types";
 import Navigation from "@/components/layout/Navigation";
 import {
@@ -171,6 +171,24 @@ export default function RoomPage() {
 
     if (roomId) {
       loadSubmissions();
+    }
+  }, [roomId]);
+
+  // 채팅 메시지 로드
+  useEffect(() => {
+    const loadChatMessages = async () => {
+      try {
+        const response = await chatAPI.getMessages(roomId);
+        if (response.success && response.data) {
+          setChatMessages(response.data.data || []);
+        }
+      } catch (error) {
+        console.error("채팅 메시지 로드 실패:", error);
+      }
+    };
+
+    if (roomId) {
+      loadChatMessages();
     }
   }, [roomId]);
 
@@ -386,28 +404,85 @@ export default function RoomPage() {
             {activeTab === "chat" && (
               <div className="flex flex-col h-full">
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {chatMessages.map((message) => (
-                    <div key={message.id} className="flex space-x-2">
-                      <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                        <span className="text-xs font-medium text-primary-600">
-                          {message.user?.username?.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm font-medium text-gray-900">
-                            {message.user?.username}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {new Date(message.createdAt).toLocaleTimeString()}
-                          </span>
+                  {chatMessages.map((message) => {
+                    const isOwnMessage = message.userId === user?.id;
+                    const messageTime = message.createdAt
+                      ? new Date(message.createdAt).toLocaleTimeString(
+                          "ko-KR",
+                          {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )
+                      : message.timestamp
+                      ? new Date(message.timestamp).toLocaleTimeString(
+                          "ko-KR",
+                          {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )
+                      : new Date().toLocaleTimeString("ko-KR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        });
+
+                    return (
+                      <div
+                        key={message.id}
+                        className={`flex ${
+                          isOwnMessage ? "justify-end" : "justify-start"
+                        }`}
+                      >
+                        <div
+                          className={`flex ${
+                            isOwnMessage ? "flex-row-reverse" : "flex-row"
+                          } space-x-2 max-w-xs`}
+                        >
+                          {!isOwnMessage && (
+                            <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
+                              <span className="text-xs font-medium text-primary-600">
+                                {message.user?.username
+                                  ?.charAt(0)
+                                  .toUpperCase() || "U"}
+                              </span>
+                            </div>
+                          )}
+                          <div
+                            className={`flex flex-col ${
+                              isOwnMessage ? "items-end" : "items-start"
+                            }`}
+                          >
+                            <div
+                              className={`flex items-center space-x-2 ${
+                                isOwnMessage ? "flex-row-reverse" : "flex-row"
+                              }`}
+                            >
+                              {!isOwnMessage && (
+                                <span className="text-sm font-medium text-gray-900">
+                                  {message.user?.username ||
+                                    message.username ||
+                                    "Unknown User"}
+                                </span>
+                              )}
+                              <span className="text-xs text-gray-500">
+                                {messageTime}
+                              </span>
+                            </div>
+                            <div
+                              className={`mt-1 px-3 py-2 rounded-lg max-w-xs break-words ${
+                                isOwnMessage
+                                  ? "bg-primary-600 text-white"
+                                  : "bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              <p className="text-sm">{message.message}</p>
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-sm text-gray-700 mt-1">
-                          {message.message}
-                        </p>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="border-t p-4">
                   <div className="flex space-x-2">
