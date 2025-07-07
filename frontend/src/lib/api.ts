@@ -260,4 +260,70 @@ export const chatAPI = {
   },
 };
 
+// 터미널 API
+export const terminalAPI = {
+  createSession: async (language?: string): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post("/terminal/sessions", { language });
+    return response.data;
+  },
+
+  getSessions: async (): Promise<ApiResponse<any[]>> => {
+    const response = await apiClient.get("/terminal/sessions");
+    return response.data;
+  },
+
+  getSession: async (sessionId: string): Promise<ApiResponse<any>> => {
+    const response = await apiClient.get(`/terminal/sessions/${sessionId}`);
+    return response.data;
+  },
+
+  executeCommand: async (
+    sessionId: string,
+    command: string
+  ): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post(
+      `/terminal/sessions/${sessionId}/execute`,
+      { command }
+    );
+    return response.data;
+  },
+
+  createFile: async (
+    sessionId: string,
+    filename: string,
+    content: string
+  ): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post(
+      `/terminal/sessions/${sessionId}/files`,
+      { filename, content }
+    );
+    return response.data;
+  },
+
+  readFile: async (
+    sessionId: string,
+    filename: string
+  ): Promise<ApiResponse<any>> => {
+    const response = await apiClient.get(
+      `/terminal/sessions/${sessionId}/files/${filename}`
+    );
+    return response.data;
+  },
+
+  destroySession: async (sessionId: string): Promise<ApiResponse<any>> => {
+    const response = await apiClient.delete(`/terminal/sessions/${sessionId}`);
+    return response.data;
+  },
+
+  destroyUserSessions: async (): Promise<ApiResponse<any>> => {
+    const response = await apiClient.delete("/terminal/sessions");
+    return response.data;
+  },
+
+  getSystemInfo: async (): Promise<ApiResponse<any>> => {
+    const response = await apiClient.get("/terminal/system/info");
+    return response.data;
+  },
+};
+
 export default apiClient;

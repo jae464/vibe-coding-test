@@ -72,6 +72,7 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       postgres:
         condition: service_healthy

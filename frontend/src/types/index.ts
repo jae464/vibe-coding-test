@@ -111,6 +111,29 @@ export interface ChatMessage {
   username?: string;
 }
 
+// 터미널 관련 타입
+export interface TerminalSession {
+  id: string;
+  userId: string;
+  containerId: string;
+  language: string;
+  createdAt: string;
+  lastActivity: string;
+}
+
+export interface TerminalCommand {
+  sessionId: string;
+  command: string;
+  output: string;
+  error?: string;
+  exitCode: number;
+}
+
+export interface TerminalFile {
+  filename: string;
+  content: string;
+}
+
 // WebSocket 이벤트 타입
 export interface SocketEvents {
   // 방 관련
@@ -130,6 +153,19 @@ export interface SocketEvents {
   // 제출 관련
   "submission-result": (data: JudgeResult) => void;
   "submission-status": (data: { submissionId: string; status: string }) => void;
+
+  // 터미널 관련
+  create_session: (data: { language?: string }) => void;
+  execute_command: (data: { sessionId: string; command: string }) => void;
+  create_file: (data: {
+    sessionId: string;
+    filename: string;
+    content: string;
+  }) => void;
+  read_file: (data: { sessionId: string; filename: string }) => void;
+  destroy_session: (data: { sessionId: string }) => void;
+  list_sessions: () => void;
+  system_info: () => void;
 }
 
 // API 응답 타입
