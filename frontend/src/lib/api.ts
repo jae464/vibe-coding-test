@@ -36,8 +36,11 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem("token");
+    // 로그인 API에서의 401 에러는 정상적인 응답이므로 처리하지 않음
+    if (
+      error.response?.status === 401 &&
+      !error.config.url?.includes("/auth/login")
+    ) {
       window.location.href = "/login";
     }
     return Promise.reject(error);
