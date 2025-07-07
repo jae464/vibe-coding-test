@@ -171,11 +171,8 @@ export const roomsAPI = {
     page = 1,
     limit = 10,
     contestId?: string
-  ): Promise<ApiResponse<PaginatedResponse<Room>>> => {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
+  ): Promise<ApiResponse<Room[]>> => {
+    const params = new URLSearchParams();
     if (contestId) params.append("contestId", contestId);
     const response = await apiClient.get(`/rooms?${params}`);
     return response.data;

@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Param, Delete } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  Query,
+} from "@nestjs/common";
 import { RoomsService } from "./rooms.service";
 import { CreateRoomDto } from "./dto/create-room.dto";
 import { JoinRoomDto } from "./dto/join-room.dto";
@@ -15,18 +23,16 @@ export class RoomsController {
   }
 
   @Get()
-  async findAll() {
+  async findAll(@Query("contestId") contestId?: string) {
+    if (contestId) {
+      const rooms = await this.roomsService.findByContest(+contestId);
+      return ApiResponseDto.success(
+        rooms,
+        "대회별 방 목록을 성공적으로 조회했습니다."
+      );
+    }
     const rooms = await this.roomsService.findAll();
     return ApiResponseDto.success(rooms, "방 목록을 성공적으로 조회했습니다.");
-  }
-
-  @Get("contest/:contestId")
-  async findByContest(@Param("contestId") contestId: string) {
-    const rooms = await this.roomsService.findByContest(+contestId);
-    return ApiResponseDto.success(
-      rooms,
-      "대회별 방 목록을 성공적으로 조회했습니다."
-    );
   }
 
   @Get(":id")

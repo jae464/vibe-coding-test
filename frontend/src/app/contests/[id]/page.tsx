@@ -54,7 +54,7 @@ export default function ContestDetailPage() {
       // 방 목록 가져오기
       const roomsResponse = await roomsAPI.getAll(1, 50, contestId);
       if (roomsResponse.success && roomsResponse.data) {
-        setRooms(roomsResponse.data.data);
+        setRooms(roomsResponse.data);
       }
     } catch (err) {
       setError("데이터를 불러오는데 실패했습니다.");
