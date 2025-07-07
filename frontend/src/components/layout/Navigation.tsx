@@ -5,7 +5,12 @@ import { useAuthStore } from "@/store/auth";
 import { Code, Trophy, Users, LogOut, User } from "lucide-react";
 
 const Navigation = () => {
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, token, logout } = useAuthStore();
+
+  // token이 있으면 인증된 것으로 판단
+  const isAuthenticated = !!token;
+
+  console.log("Navigation 렌더링:", { isAuthenticated, user, token });
 
   const handleLogout = () => {
     logout();

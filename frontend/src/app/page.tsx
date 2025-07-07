@@ -1,17 +1,31 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/store/auth";
 import Navigation from "@/components/layout/Navigation";
 import { Code, Trophy, Users, ArrowRight, Play } from "lucide-react";
 
 export default function HomePage() {
-  const { checkAuth, isAuthenticated } = useAuthStore();
+  const router = useRouter();
+  const { checkAuth, logout } = useAuthStore();
 
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+
+    // 인증 만료 이벤트 감지
+    const handleAuthLogout = () => {
+      logout();
+      router.push("/login");
+    };
+
+    window.addEventListener("auth:logout", handleAuthLogout);
+
+    return () => {
+      window.removeEventListener("auth:logout", handleAuthLogout);
+    };
+  }, [checkAuth, logout, router]);
 
   return (
     <div className="min-h-screen bg-gray-50">

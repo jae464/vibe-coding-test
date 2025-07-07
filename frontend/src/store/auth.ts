@@ -6,7 +6,6 @@ import { authAPI } from "@/lib/api";
 interface AuthState {
   user: User | null;
   token: string | null;
-  isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
 }
@@ -31,7 +30,6 @@ export const useAuthStore = create<AuthStore>()(
       // 상태
       user: null,
       token: null,
-      isAuthenticated: false,
       isLoading: false,
       error: null,
 
@@ -41,13 +39,14 @@ export const useAuthStore = create<AuthStore>()(
         try {
           const response = await authAPI.login(email, password);
           if (response.success && response.data) {
-            const { token, user } = response.data;
+            const { access_token, user } = response.data;
+            console.log("로그인 성공:", { user, access_token });
             set({
               user,
-              token,
-              isAuthenticated: true,
+              token: access_token,
               isLoading: false,
             });
+            console.log("상태 업데이트 완료");
             return true;
           } else {
             set({
@@ -94,7 +93,6 @@ export const useAuthStore = create<AuthStore>()(
         set({
           user: null,
           token: null,
-          isAuthenticated: false,
           error: null,
         });
       },
@@ -102,7 +100,7 @@ export const useAuthStore = create<AuthStore>()(
       checkAuth: async () => {
         const token = get().token;
         if (!token) {
-          set({ isAuthenticated: false });
+          console.log("토큰이 없음, 인증 상태: false");
           return false;
         }
 
@@ -110,27 +108,27 @@ export const useAuthStore = create<AuthStore>()(
         try {
           const response = await authAPI.me();
           if (response.success && response.data) {
+            console.log("토큰 유효, 인증 상태: true");
             set({
               user: response.data,
               token,
-              isAuthenticated: true,
               isLoading: false,
             });
             return true;
           } else {
+            console.log("토큰 무효, 인증 상태: false");
             set({
               user: null,
               token: null,
-              isAuthenticated: false,
               isLoading: false,
             });
             return false;
           }
         } catch (error) {
+          console.log("토큰 검증 실패, 인증 상태: false");
           set({
             user: null,
             token: null,
-            isAuthenticated: false,
             isLoading: false,
           });
           return false;
@@ -146,7 +144,6 @@ export const useAuthStore = create<AuthStore>()(
       partialize: (state) => ({
         user: state.user,
         token: state.token,
-        isAuthenticated: state.isAuthenticated,
       }),
     }
   )

@@ -41,7 +41,8 @@ apiClient.interceptors.response.use(
       error.response?.status === 401 &&
       !error.config.url?.includes("/auth/login")
     ) {
-      window.location.href = "/login";
+      // 새로고침 대신 라우터 이동을 위해 이벤트 발생
+      window.dispatchEvent(new CustomEvent("auth:logout"));
     }
     return Promise.reject(error);
   }
@@ -52,7 +53,7 @@ export const authAPI = {
   login: async (
     email: string,
     password: string
-  ): Promise<ApiResponse<{ token: string; user: User }>> => {
+  ): Promise<ApiResponse<{ access_token: string; user: User }>> => {
     const response = await apiClient.post("/auth/login", { email, password });
     return response.data;
   },

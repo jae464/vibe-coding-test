@@ -23,6 +23,7 @@ export default function LoginPage() {
 
     const success = await login(email, password);
     if (success) {
+      console.log("로그인 성공, 메인 페이지로 이동");
       router.push("/");
     }
     setIsLoading(false);
