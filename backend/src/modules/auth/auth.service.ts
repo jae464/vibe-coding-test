@@ -55,4 +55,12 @@ export class AuthService {
     const { passwordHash, ...result } = user;
     return result;
   }
+
+  async me(userId: number) {
+    const user = await this.usersService.findOne(userId);
+    if (!user) {
+      throw new UnauthorizedException("사용자를 찾을 수 없습니다.");
+    }
+    return user;
+  }
 }
