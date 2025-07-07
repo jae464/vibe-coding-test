@@ -43,7 +43,7 @@ export class AuthService {
     };
   }
 
-  async register(registerDto: RegisterDto) {
+  async signup(registerDto: RegisterDto) {
     // 사용자 생성 (UsersService에서 중복 체크와 비밀번호 해시화를 처리)
     const user = await this.usersService.create({
       username: registerDto.username,

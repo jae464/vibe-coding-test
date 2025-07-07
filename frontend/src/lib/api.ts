@@ -59,7 +59,7 @@ export const authAPI = {
     email: string,
     password: string
   ): Promise<ApiResponse<User>> => {
-    const response = await apiClient.post("/auth/signup", {
+    const response = await apiClient.post("/auth/register", {
       username,
       email,
       password,

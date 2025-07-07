@@ -26,4 +26,4 @@ RUN ls -la dist/
 # EXPOSE 3001
 
 # 애플리케이션 실행
-CMD ["npm", "run", "start:prod"] 
+CMD ["npm", "run", "start"] 

@@ -8,21 +8,21 @@ import { ApiResponseDto } from "../../common/dto/api-response.dto";
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Post("register")
+  async signup(@Body() registerDto: RegisterDto) {
+    const result = await this.authService.signup(registerDto);
+    return ApiResponseDto.success(
+      result,
+      "회원가입이 성공적으로 완료되었습니다."
+    );
+  }
+
   @Post("login")
   async login(@Body() loginDto: LoginDto) {
     const result = await this.authService.login(loginDto);
     return ApiResponseDto.success(
       result,
       "로그인이 성공적으로 완료되었습니다."
-    );
-  }
-
-  @Post("signup")
-  async register(@Body() registerDto: RegisterDto) {
-    const result = await this.authService.register(registerDto);
-    return ApiResponseDto.success(
-      result,
-      "회원가입이 성공적으로 완료되었습니다."
     );
   }
 }
