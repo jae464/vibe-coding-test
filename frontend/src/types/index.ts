@@ -27,7 +27,7 @@ export interface Problem {
   difficulty: "EASY" | "MEDIUM" | "HARD";
   timeLimit: number;
   memoryLimit: number;
-  contestId?: string;
+  contestId?: number;
   createdAt: string;
   updatedAt: string;
 }

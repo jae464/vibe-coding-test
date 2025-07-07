@@ -101,7 +101,7 @@ export default function CreateProblemPage() {
         difficulty: formData.difficulty,
         timeLimit: formData.timeLimit,
         memoryLimit: formData.memoryLimit,
-        contestId: contestId,
+        contestId: parseInt(contestId),
       });
 
       if (response.success && response.data) {

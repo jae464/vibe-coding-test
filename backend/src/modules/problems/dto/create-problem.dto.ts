@@ -1,8 +1,21 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsEnum,
+} from "class-validator";
+
+export enum ProblemDifficulty {
+  EASY = "EASY",
+  MEDIUM = "MEDIUM",
+  HARD = "HARD",
+}
 
 export class CreateProblemDto {
+  @IsOptional()
   @IsNumber()
-  contestId: number;
+  contestId?: number;
 
   @IsString()
   @IsNotEmpty()
@@ -12,25 +25,8 @@ export class CreateProblemDto {
   @IsNotEmpty()
   description: string;
 
-  @IsString()
-  @IsNotEmpty()
-  inputDescription: string;
-
-  @IsString()
-  @IsNotEmpty()
-  outputDescription: string;
-
-  @IsString()
-  @IsNotEmpty()
-  sampleInput: string;
-
-  @IsString()
-  @IsNotEmpty()
-  sampleOutput: string;
-
-  @IsOptional()
-  @IsNumber()
-  order?: number;
+  @IsEnum(ProblemDifficulty)
+  difficulty: ProblemDifficulty;
 
   @IsOptional()
   @IsNumber()
@@ -39,4 +35,24 @@ export class CreateProblemDto {
   @IsOptional()
   @IsNumber()
   memoryLimit?: number;
-} 
+
+  @IsOptional()
+  @IsString()
+  inputDescription?: string;
+
+  @IsOptional()
+  @IsString()
+  outputDescription?: string;
+
+  @IsOptional()
+  @IsString()
+  sampleInput?: string;
+
+  @IsOptional()
+  @IsString()
+  sampleOutput?: string;
+
+  @IsOptional()
+  @IsNumber()
+  order?: number;
+}

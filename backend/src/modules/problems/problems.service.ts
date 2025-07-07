@@ -1,14 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Problem } from '../../entities/Problem';
-import { CreateProblemDto } from './dto/create-problem.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Problem } from "../../entities/Problem";
+import { CreateProblemDto } from "./dto/create-problem.dto";
 
 @Injectable()
 export class ProblemsService {
   constructor(
     @InjectRepository(Problem)
-    private problemsRepository: Repository<Problem>,
+    private problemsRepository: Repository<Problem>
   ) {}
 
   async create(createProblemDto: CreateProblemDto): Promise<Problem> {
@@ -18,19 +18,19 @@ export class ProblemsService {
 
   async findAll(): Promise<Problem[]> {
     return this.problemsRepository.find({
-      relations: ['contest', 'testcases'],
-      order: { id: 'ASC' },
+      relations: ["contest", "testcases"],
+      order: { id: "ASC" },
     });
   }
 
   async findOne(id: number): Promise<Problem> {
     const problem = await this.problemsRepository.findOne({
       where: { id },
-      relations: ['contest', 'testcases'],
+      relations: ["contest", "testcases"],
     });
 
     if (!problem) {
-      throw new NotFoundException('문제를 찾을 수 없습니다.');
+      throw new NotFoundException("문제를 찾을 수 없습니다.");
     }
 
     return problem;
@@ -39,12 +39,15 @@ export class ProblemsService {
   async findByContest(contestId: number): Promise<Problem[]> {
     return this.problemsRepository.find({
       where: { contestId },
-      relations: ['testcases'],
-      order: { id: 'ASC' },
+      relations: ["testcases"],
+      order: { id: "ASC" },
     });
   }
 
-  async update(id: number, updateProblemDto: Partial<CreateProblemDto>): Promise<Problem> {
+  async update(
+    id: number,
+    updateProblemDto: Partial<CreateProblemDto>
+  ): Promise<Problem> {
     const problem = await this.findOne(id);
     await this.problemsRepository.update(id, updateProblemDto);
     return this.findOne(id);
@@ -54,4 +57,4 @@ export class ProblemsService {
     const problem = await this.findOne(id);
     await this.problemsRepository.remove(problem);
   }
-} 
+}
