@@ -42,7 +42,6 @@ export const useAuthStore = create<AuthStore>()(
           const response = await authAPI.login(email, password);
           if (response.success && response.data) {
             const { token, user } = response.data;
-            localStorage.setItem("token", token);
             set({
               user,
               token,
@@ -92,7 +91,6 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       logout: () => {
-        localStorage.removeItem("token");
         set({
           user: null,
           token: null,
@@ -102,7 +100,7 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       checkAuth: async () => {
-        const token = localStorage.getItem("token");
+        const token = get().token;
         if (!token) {
           set({ isAuthenticated: false });
           return false;
@@ -120,7 +118,6 @@ export const useAuthStore = create<AuthStore>()(
             });
             return true;
           } else {
-            localStorage.removeItem("token");
             set({
               user: null,
               token: null,
@@ -130,7 +127,6 @@ export const useAuthStore = create<AuthStore>()(
             return false;
           }
         } catch (error) {
-          localStorage.removeItem("token");
           set({
             user: null,
             token: null,
