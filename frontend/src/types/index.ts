@@ -14,7 +14,7 @@ export interface Contest {
   description: string;
   startTime: string;
   endTime: string;
-  isActive: boolean;
+  isActive?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -24,7 +24,7 @@ export interface Problem {
   id: string;
   title: string;
   description: string;
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  difficulty: "EASY" | "MEDIUM" | "HARD";
   timeLimit: number;
   memoryLimit: number;
   contestId?: string;
@@ -64,7 +64,15 @@ export interface Submission {
   problemId: string;
   code: string;
   language: string;
-  status: 'PENDING' | 'RUNNING' | 'ACCEPTED' | 'WRONG_ANSWER' | 'TIME_LIMIT_EXCEEDED' | 'MEMORY_LIMIT_EXCEEDED' | 'RUNTIME_ERROR' | 'COMPILATION_ERROR';
+  status:
+    | "PENDING"
+    | "RUNNING"
+    | "ACCEPTED"
+    | "WRONG_ANSWER"
+    | "TIME_LIMIT_EXCEEDED"
+    | "MEMORY_LIMIT_EXCEEDED"
+    | "RUNTIME_ERROR"
+    | "COMPILATION_ERROR";
   executionTime?: number;
   memoryUsed?: number;
   createdAt: string;
@@ -103,22 +111,22 @@ export interface ChatMessage {
 // WebSocket 이벤트 타입
 export interface SocketEvents {
   // 방 관련
-  'join-room': (data: { roomId: string; userId: string }) => void;
-  'leave-room': (data: { roomId: string; userId: string }) => void;
-  'user-joined': (data: { user: User }) => void;
-  'user-left': (data: { user: User }) => void;
-  
+  "join-room": (data: { roomId: string; userId: string }) => void;
+  "leave-room": (data: { roomId: string; userId: string }) => void;
+  "user-joined": (data: { user: User }) => void;
+  "user-left": (data: { user: User }) => void;
+
   // 코드 편집 관련
-  'code-change': (data: { code: string; userId: string }) => void;
-  'code-sync': (data: { code: string; userId: string }) => void;
-  
+  "code-change": (data: { code: string; userId: string }) => void;
+  "code-sync": (data: { code: string; userId: string }) => void;
+
   // 채팅 관련
-  'chat-message': (data: ChatMessage) => void;
-  'send-message': (data: { message: string; roomId: string }) => void;
-  
+  "chat-message": (data: ChatMessage) => void;
+  "send-message": (data: { message: string; roomId: string }) => void;
+
   // 제출 관련
-  'submission-result': (data: JudgeResult) => void;
-  'submission-status': (data: { submissionId: string; status: string }) => void;
+  "submission-result": (data: JudgeResult) => void;
+  "submission-status": (data: { submissionId: string; status: string }) => void;
 }
 
 // API 응답 타입
@@ -136,4 +144,4 @@ export interface PaginatedResponse<T> {
   page: number;
   limit: number;
   totalPages: number;
-} 
+}

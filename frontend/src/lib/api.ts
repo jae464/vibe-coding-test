@@ -95,13 +95,8 @@ export const usersAPI = {
 
 // 대회 API
 export const contestsAPI = {
-  getAll: async (
-    page = 1,
-    limit = 10
-  ): Promise<ApiResponse<PaginatedResponse<Contest>>> => {
-    const response = await apiClient.get(
-      `/contests?page=${page}&limit=${limit}`
-    );
+  getAll: async (): Promise<ApiResponse<Contest[]>> => {
+    const response = await apiClient.get("/contests");
     return response.data;
   },
 

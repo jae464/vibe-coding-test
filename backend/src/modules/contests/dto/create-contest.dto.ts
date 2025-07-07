@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsDateString,
+  IsOptional,
+  IsBoolean,
+} from "class-validator";
 
 export class CreateContestDto {
   @IsString()
@@ -14,4 +20,8 @@ export class CreateContestDto {
 
   @IsDateString()
   endTime: string;
-} 
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}

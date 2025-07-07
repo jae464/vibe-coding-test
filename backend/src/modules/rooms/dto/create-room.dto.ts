@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional } from "class-validator";
 
 export class CreateRoomDto {
   @IsString()
@@ -9,5 +9,12 @@ export class CreateRoomDto {
   contestId: number;
 
   @IsNumber()
+  problemId: number;
+
+  @IsNumber()
   createdBy: number;
-} 
+
+  @IsOptional()
+  @IsNumber()
+  maxParticipants?: number;
+}

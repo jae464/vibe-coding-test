@@ -13,6 +13,7 @@ import { Problem } from "./Problem";
 import { RoomUser } from "./RoomUser";
 import { Submission } from "./Submission";
 import { ChatMessage } from "./ChatMessage";
+import { User } from "./User";
 
 @Entity()
 export class Room {
@@ -27,6 +28,9 @@ export class Room {
 
   @Column({ name: "problem_id" })
   problemId: number;
+
+  @Column({ name: "created_by" })
+  createdBy: number;
 
   @Column({ name: "max_participants", default: 10 })
   maxParticipants: number;
@@ -48,6 +52,10 @@ export class Room {
   @ManyToOne(() => Problem, (problem) => problem.rooms)
   @JoinColumn({ name: "problem_id" })
   problem: Problem;
+
+  @ManyToOne(() => User, (user) => user.createdRooms)
+  @JoinColumn({ name: "created_by" })
+  creator: User;
 
   @OneToMany(() => RoomUser, (roomUser) => roomUser.room)
   roomUsers: RoomUser[];

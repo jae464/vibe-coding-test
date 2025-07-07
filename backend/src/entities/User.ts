@@ -9,6 +9,7 @@ import {
 import { RoomUser } from "./RoomUser";
 import { Submission } from "./Submission";
 import { ChatMessage } from "./ChatMessage";
+import { Room } from "./Room";
 
 export enum UserRole {
   USER = "USER",
@@ -51,4 +52,7 @@ export class User {
 
   @OneToMany(() => ChatMessage, (message) => message.user)
   messages: ChatMessage[];
+
+  @OneToMany(() => Room, (room) => room.creator)
+  createdRooms: Room[];
 }

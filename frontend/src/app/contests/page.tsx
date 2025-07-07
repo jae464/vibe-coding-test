@@ -10,8 +10,7 @@ export default function ContestsPage() {
   const [contests, setContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+
   const router = useRouter();
   const { token } = useAuthStore();
 
@@ -22,15 +21,17 @@ export default function ContestsPage() {
     }
 
     fetchContests();
-  }, [token, page]);
+  }, [token]);
 
   const fetchContests = async () => {
     try {
       setLoading(true);
-      const response = await contestsAPI.getAll(page, 10);
+      console.log("Fetching contests...");
+      const response = await contestsAPI.getAll();
+      console.log("Contests response:", response);
       if (response.success && response.data) {
-        setContests(response.data.data);
-        setTotalPages(response.data.totalPages);
+        setContests(response.data);
+        console.log("Contests set:", response.data);
       } else {
         setError(response.message || "대회 목록을 불러오는데 실패했습니다.");
       }
@@ -189,31 +190,6 @@ export default function ContestsPage() {
                 </div>
               </div>
             ))}
-          </div>
-        )}
-
-        {/* 페이지네이션 */}
-        {totalPages > 1 && (
-          <div className="flex justify-center mt-8">
-            <nav className="flex items-center gap-2">
-              <button
-                onClick={() => setPage(Math.max(1, page - 1))}
-                disabled={page === 1}
-                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                이전
-              </button>
-              <span className="px-3 py-2 text-sm text-gray-700">
-                {page} / {totalPages}
-              </span>
-              <button
-                onClick={() => setPage(Math.min(totalPages, page + 1))}
-                disabled={page === totalPages}
-                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                다음
-              </button>
-            </nav>
           </div>
         )}
       </div>

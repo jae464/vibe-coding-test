@@ -73,7 +73,6 @@ export default function CreateContestPage() {
         description: formData.description.trim(),
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
-        isActive: true,
       });
 
       if (response.success && response.data) {
