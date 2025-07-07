@@ -82,9 +82,6 @@ export class TerminalService {
 
       await container.start();
 
-      // 언어별 도구 설치
-      await this.installLanguageTools(container, language);
-
       const session: TerminalSession = {
         id: sessionId,
         userId,
@@ -103,62 +100,6 @@ export class TerminalService {
     } catch (error) {
       this.logger.error(`Failed to create terminal session: ${error.message}`);
       throw new Error("터미널 세션 생성에 실패했습니다.");
-    }
-  }
-
-  /**
-   * 언어별 도구 설치
-   */
-  private async installLanguageTools(
-    container: any,
-    language: string
-  ): Promise<void> {
-    try {
-      const toolsMap = {
-        javascript:
-          "curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && apt-get install -y nodejs",
-        python: "apt-get update && apt-get install -y python3 python3-pip",
-        java: "apt-get update && apt-get install -y openjdk-17-jdk",
-        cpp: "apt-get update && apt-get install -y g++",
-        bash: 'echo "Bash is already available"',
-      };
-
-      const installCommand =
-        toolsMap[language as keyof typeof toolsMap] || toolsMap.bash;
-
-      const exec = await container.exec({
-        AttachStdout: true,
-        AttachStderr: true,
-        Cmd: ["/bin/bash", "-c", installCommand],
-      });
-
-      return new Promise((resolve, reject) => {
-        exec.start({}, (err, stream) => {
-          if (err) {
-            this.logger.error(
-              `Failed to install language tools for ${language}: ${err.message}`
-            );
-            resolve(); // 에러가 있어도 계속 진행
-            return;
-          }
-
-          stream.on("end", () => {
-            this.logger.log(`Language tools installed for ${language}`);
-            resolve();
-          });
-
-          stream.on("error", (err) => {
-            this.logger.error(
-              `Failed to install language tools for ${language}: ${err.message}`
-            );
-            resolve(); // 에러가 있어도 계속 진행
-          });
-        });
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to install language tools for ${language}: ${error.message}`
-      );
     }
   }
 
