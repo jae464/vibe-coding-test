@@ -10,6 +10,7 @@ import { SubmissionsModule } from './modules/submissions/submissions.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { WebsocketModule } from './websocket/websocket.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { JudgeModule } from './modules/judge/judge.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ChatModule } from './modules/chat/chat.module';
     AuthModule,
     WebsocketModule,
     ChatModule,
+    JudgeModule,
   ],
 })
 export class AppModule {} 

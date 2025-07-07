@@ -3,12 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Submission, SubmissionStatus } from '../../entities/Submission';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
+import { JudgeService } from '../judge/judge.service';
 
 @Injectable()
 export class SubmissionsService {
   constructor(
     @InjectRepository(Submission)
     private submissionsRepository: Repository<Submission>,
+    private judgeService: JudgeService,
   ) {}
 
   async create(createSubmissionDto: CreateSubmissionDto): Promise<Submission> {
@@ -19,8 +21,8 @@ export class SubmissionsService {
 
     const savedSubmission = await this.submissionsRepository.save(submission);
 
-    // TODO: 채점 시스템 연동
-    // await this.judgeSubmission(savedSubmission);
+    // 비동기로 채점 실행
+    this.judgeSubmissionAsync(savedSubmission.id);
 
     return savedSubmission;
   }
@@ -85,11 +87,20 @@ export class SubmissionsService {
     await this.submissionsRepository.remove(submission);
   }
 
-  // TODO: 채점 시스템 구현
-  private async judgeSubmission(submission: Submission): Promise<void> {
-    // 1. 코드를 채점 서버로 전송
-    // 2. 테스트케이스 실행
-    // 3. 결과를 받아서 상태 업데이트
-    console.log('채점 시작:', submission.id);
+  // 비동기 채점 실행
+  private async judgeSubmissionAsync(submissionId: number): Promise<void> {
+    try {
+      await this.judgeService.judgeSubmission(submissionId);
+    } catch (error) {
+      console.error(`채점 중 오류 발생 (submission ${submissionId}):`, error);
+      
+      // 채점 실패 시 상태 업데이트
+      await this.updateStatus(submissionId, SubmissionStatus.RUNTIME_ERROR, '채점 중 오류가 발생했습니다.');
+    }
+  }
+
+  // 즉시 채점 실행 (테스트용)
+  async judgeSubmissionSync(submissionId: number): Promise<any> {
+    return this.judgeService.judgeSubmission(submissionId);
   }
 } 
