@@ -265,7 +265,7 @@ export default function ContestDetailPage() {
                 </button>
               </div>
               <div className="space-y-3">
-                {problems.length === 0 ? (
+                {!problems || problems.length === 0 ? (
                   <p className="text-gray-500 text-sm">
                     등록된 문제가 없습니다.
                   </p>
@@ -289,7 +289,7 @@ export default function ContestDetailPage() {
                     </div>
                   ))
                 )}
-                {problems.length > 5 && (
+                {problems && problems.length > 5 && (
                   <p className="text-sm text-gray-500 text-center">
                     외 {problems.length - 5}개 더...
                   </p>
@@ -309,7 +309,7 @@ export default function ContestDetailPage() {
                 </button>
               </div>
               <div className="space-y-3">
-                {rooms.length === 0 ? (
+                {!rooms || rooms.length === 0 ? (
                   <p className="text-gray-500 text-sm">생성된 방이 없습니다.</p>
                 ) : (
                   rooms.slice(0, 5).map((room) => (
@@ -327,7 +327,7 @@ export default function ContestDetailPage() {
                     </div>
                   ))
                 )}
-                {rooms.length > 5 && (
+                {rooms && rooms.length > 5 && (
                   <p className="text-sm text-gray-500 text-center">
                     외 {rooms.length - 5}개 더...
                   </p>
@@ -353,7 +353,7 @@ export default function ContestDetailPage() {
               </div>
             </div>
             <div className="divide-y divide-gray-200">
-              {problems.length === 0 ? (
+              {!problems || problems.length === 0 ? (
                 <div className="p-6 text-center">
                   <div className="text-gray-400 text-4xl mb-2">📝</div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -420,7 +420,7 @@ export default function ContestDetailPage() {
               </div>
             </div>
             <div className="divide-y divide-gray-200">
-              {rooms.length === 0 ? (
+              {!rooms || rooms.length === 0 ? (
                 <div className="p-6 text-center">
                   <div className="text-gray-400 text-4xl mb-2">🏠</div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">

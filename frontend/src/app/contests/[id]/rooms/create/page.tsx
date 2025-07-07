@@ -198,7 +198,7 @@ export default function CreateRoomPage() {
               >
                 문제 선택 *
               </label>
-              {problems.length === 0 ? (
+              {!problems || problems.length === 0 ? (
                 <div className="text-center py-6 border border-gray-300 rounded-md bg-gray-50">
                   <div className="text-gray-400 text-4xl mb-2">📝</div>
                   <p className="text-gray-600 mb-4">등록된 문제가 없습니다.</p>
