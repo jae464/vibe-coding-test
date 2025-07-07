@@ -32,7 +32,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private connectedUsers = new Map<
     string,
-    { userId: number; username: string }
+    { userId: number; username: string; roomId: number; clientId: string }
   >();
 
   handleConnection(client: Socket) {
@@ -65,7 +65,12 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log(`[WebSocket] Client ${client.id} joined room_${roomId}`);
 
     // 연결된 사용자 정보 저장
-    this.connectedUsers.set(client.id, { userId, username });
+    this.connectedUsers.set(client.id, {
+      userId,
+      username,
+      roomId,
+      clientId: client.id,
+    });
     console.log(
       `[WebSocket] Connected users:`,
       Array.from(this.connectedUsers.entries())
@@ -80,18 +85,24 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log(`[WebSocket] Emitted user_joined to room_${roomId}`);
 
     // 새로 참가한 사용자에게 현재 방의 모든 참가자 정보 전송
-    const roomParticipants = Array.from(this.connectedUsers.values()).filter(
-      (user) => user.userId !== userId
-    ); // 자신 제외
+    console.log(
+      `[WebSocket] All connected users:`,
+      Array.from(this.connectedUsers.entries())
+    );
+
+    // 현재 방의 모든 소켓 클라이언트 확인
+    const roomSockets = await this.server.in(`room_${roomId}`).fetchSockets();
+    console.log(
+      `[WebSocket] Room ${roomId} sockets:`,
+      roomSockets.map((s) => s.id)
+    );
 
     client.emit("room_participants", {
-      participants: roomParticipants,
+      participants: Array.from(this.connectedUsers.values()).filter(
+        (user) => user.roomId === roomId
+      ),
       timestamp: new Date(),
     });
-    console.log(
-      `[WebSocket] Sent room_participants to new user:`,
-      roomParticipants
-    );
 
     console.log(`[WebSocket] User ${username} joined room ${roomId}`);
   }
