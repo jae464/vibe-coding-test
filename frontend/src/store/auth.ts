@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { User } from '@/types';
-import { authAPI } from '@/lib/api';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { User } from "@/types";
+import { authAPI } from "@/lib/api";
 
 interface AuthState {
   user: User | null;
@@ -13,7 +13,11 @@ interface AuthState {
 
 interface AuthActions {
   login: (email: string, password: string) => Promise<boolean>;
-  register: (username: string, email: string, password: string) => Promise<boolean>;
+  register: (
+    username: string,
+    email: string,
+    password: string
+  ) => Promise<boolean>;
   logout: () => void;
   checkAuth: () => Promise<boolean>;
   clearError: () => void;
@@ -38,7 +42,7 @@ export const useAuthStore = create<AuthStore>()(
           const response = await authAPI.login(email, password);
           if (response.success && response.data) {
             const { token, user } = response.data;
-            localStorage.setItem('token', token);
+            localStorage.setItem("token", token);
             set({
               user,
               token,
@@ -48,14 +52,14 @@ export const useAuthStore = create<AuthStore>()(
             return true;
           } else {
             set({
-              error: response.message || '로그인에 실패했습니다.',
+              error: response.message || "로그인에 실패했습니다.",
               isLoading: false,
             });
             return false;
           }
         } catch (error) {
           set({
-            error: '로그인 중 오류가 발생했습니다.',
+            error: "로그인 중 오류가 발생했습니다.",
             isLoading: false,
           });
           return false;
@@ -73,14 +77,14 @@ export const useAuthStore = create<AuthStore>()(
             return true;
           } else {
             set({
-              error: response.message || '회원가입에 실패했습니다.',
+              error: response.message || "회원가입에 실패했습니다.",
               isLoading: false,
             });
             return false;
           }
         } catch (error) {
           set({
-            error: '회원가입 중 오류가 발생했습니다.',
+            error: "회원가입 중 오류가 발생했습니다.",
             isLoading: false,
           });
           return false;
@@ -88,7 +92,7 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       logout: () => {
-        localStorage.removeItem('token');
+        localStorage.removeItem("token");
         set({
           user: null,
           token: null,
@@ -98,7 +102,7 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       checkAuth: async () => {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         if (!token) {
           set({ isAuthenticated: false });
           return false;
@@ -116,7 +120,7 @@ export const useAuthStore = create<AuthStore>()(
             });
             return true;
           } else {
-            localStorage.removeItem('token');
+            localStorage.removeItem("token");
             set({
               user: null,
               token: null,
@@ -126,7 +130,7 @@ export const useAuthStore = create<AuthStore>()(
             return false;
           }
         } catch (error) {
-          localStorage.removeItem('token');
+          localStorage.removeItem("token");
           set({
             user: null,
             token: null,
@@ -142,7 +146,7 @@ export const useAuthStore = create<AuthStore>()(
       },
     }),
     {
-      name: 'auth-storage',
+      name: "auth-storage",
       partialize: (state) => ({
         user: state.user,
         token: state.token,
@@ -150,4 +154,4 @@ export const useAuthStore = create<AuthStore>()(
       }),
     }
   )
-); 
+);
