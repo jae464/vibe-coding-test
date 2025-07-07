@@ -71,13 +71,27 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       Array.from(this.connectedUsers.entries())
     );
 
-    // 방의 다른 사용자들에게 참가 알림
-    client.to(`room_${roomId}`).emit("user_joined", {
+    // 방의 모든 사용자에게 참가 알림 (자신 포함)
+    this.server.to(`room_${roomId}`).emit("user_joined", {
       userId,
       username,
       timestamp: new Date(),
     });
     console.log(`[WebSocket] Emitted user_joined to room_${roomId}`);
+
+    // 새로 참가한 사용자에게 현재 방의 모든 참가자 정보 전송
+    const roomParticipants = Array.from(this.connectedUsers.values()).filter(
+      (user) => user.userId !== userId
+    ); // 자신 제외
+
+    client.emit("room_participants", {
+      participants: roomParticipants,
+      timestamp: new Date(),
+    });
+    console.log(
+      `[WebSocket] Sent room_participants to new user:`,
+      roomParticipants
+    );
 
     console.log(`[WebSocket] User ${username} joined room ${roomId}`);
   }

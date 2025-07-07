@@ -8,6 +8,7 @@ interface UseSocketOptions {
   onCodeChange?: (code: string, userId: string, clientId?: string) => void;
   onUserJoined?: (user: User) => void;
   onUserLeft?: (user: User) => void;
+  onRoomParticipants?: (participants: any[]) => void;
   onChatMessage?: (message: ChatMessage) => void;
   onSubmissionResult?: (result: any) => void;
 }
@@ -68,6 +69,12 @@ export const useSocket = (options: UseSocketOptions = {}) => {
     socketRef.current.on("user_left", (data) => {
       console.log("사용자 퇴장:", data);
       options.onUserLeft?.(data);
+    });
+
+    // 방 참가자 목록 이벤트
+    socketRef.current.on("room_participants", (data) => {
+      console.log("방 참가자 목록:", data);
+      options.onRoomParticipants?.(data.participants);
     });
 
     // 코드 편집 이벤트

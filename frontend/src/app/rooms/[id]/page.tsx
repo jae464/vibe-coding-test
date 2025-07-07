@@ -35,7 +35,6 @@ export default function RoomPage() {
   const [problem, setProblem] = useState<Problem | null>(null);
   const [participants, setParticipants] = useState<User[]>([]);
   const [code, setCode] = useState("");
-  const [codeVersion, setCodeVersion] = useState(0);
   const [currentClientId, setCurrentClientId] = useState<string>("");
   const [language, setLanguage] = useState("javascript");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -65,7 +64,6 @@ export default function RoomPage() {
       if (receivedClientId !== clientId) {
         console.log("다른 클라이언트의 코드 변경을 적용합니다");
         setCode(newCode);
-        setCodeVersion((prev) => prev + 1);
       } else {
         console.log("자신의 코드 변경이므로 무시합니다");
       }
@@ -91,6 +89,18 @@ export default function RoomPage() {
     onUserLeft: (data: any) => {
       console.log("사용자 퇴장 이벤트:", data);
       setParticipants((prev) => prev.filter((p) => p.id !== data.userId));
+    },
+    onRoomParticipants: (participants: any[]) => {
+      console.log("방 참가자 목록 이벤트:", participants);
+      const participantUsers = participants.map((p: any) => ({
+        id: p.userId,
+        username: p.username,
+        email: "",
+        role: "USER",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }));
+      setParticipants(participantUsers);
     },
     onChatMessage: (message: ChatMessage) => {
       setChatMessages((prev) => [...prev, message]);
@@ -271,7 +281,6 @@ export default function RoomPage() {
           {/* 코드 에디터 */}
           <div className="flex-1">
             <MonacoEditor
-              key={`editor-${codeVersion}`}
               height="100%"
               language={language}
               value={code}
