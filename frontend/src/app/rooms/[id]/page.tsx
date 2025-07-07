@@ -255,7 +255,7 @@ export default function RoomPage() {
     <div className="min-h-screen bg-gray-50">
       <Navigation />
 
-      <div className="flex h-screen pt-16">
+      <div className="flex h-[calc(100vh-4rem)]">
         {/* 왼쪽 패널 - 코드 에디터 */}
         <div className="flex-1 flex flex-col">
           {/* 헤더 */}
