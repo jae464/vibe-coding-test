@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* CSS 로드 확인용 스타일 */
+body::before {
+  content: "CSS 로드됨";
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: green;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 9999;
+}
+
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;
@@ -9,24 +23,51 @@
   
   body {
     @apply bg-gray-50 text-gray-900;
+    margin: 0;
+    padding: 0;
+    background-color: #f9fafb;
+    color: #111827;
+  }
+
+  * {
+    box-sizing: border-box;
   }
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
   }
   
   .btn-primary {
     @apply bg-primary-600 text-white hover:bg-primary-700;
+    background-color: #2563eb;
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background-color: #1d4ed8;
   }
   
   .btn-secondary {
     @apply bg-gray-100 text-gray-900 hover:bg-gray-200;
+    background-color: #f3f4f6;
+    color: #111827;
+  }
+  
+  .btn-secondary:hover {
+    background-color: #e5e7eb;
   }
   
   .btn-outline {
     @apply border border-gray-300 bg-white text-gray-700 hover:bg-gray-50;
+    border: 1px solid #d1d5db;
+    background-color: white;
+    color: #374151;
+  }
+  
+  .btn-outline:hover {
+    background-color: #f9fafb;
   }
   
   .input {
@@ -35,26 +76,156 @@
   
   .card {
     @apply rounded-lg border border-gray-200 bg-white text-gray-950 shadow-sm;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+    background-color: white;
+    color: #09090b;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   }
   
   .card-header {
     @apply flex flex-col space-y-1.5 p-6;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: 1.5rem;
   }
   
   .card-title {
     @apply text-2xl font-semibold leading-none tracking-tight;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.025em;
   }
   
   .card-description {
     @apply text-sm text-gray-500;
+    font-size: 0.875rem;
+    color: #6b7280;
   }
   
   .card-content {
     @apply p-6 pt-0;
+    padding: 1.5rem;
+    padding-top: 0;
   }
   
   .card-footer {
     @apply flex items-center p-6 pt-0;
+    display: flex;
+    align-items: center;
+    padding: 1.5rem;
+    padding-top: 0;
+  }
+}
+
+/* 기본 스타일 (Tailwind가 로드되지 않을 때) */
+.min-h-screen {
+  min-height: 100vh;
+}
+
+.bg-gray-50 {
+  background-color: #f9fafb;
+}
+
+.text-gray-900 {
+  color: #111827;
+}
+
+.text-primary-600 {
+  color: #2563eb;
+}
+
+.bg-primary-600 {
+  background-color: #2563eb;
+}
+
+.bg-white {
+  background-color: white;
+}
+
+.border {
+  border: 1px solid;
+}
+
+.border-gray-200 {
+  border-color: #e5e7eb;
+}
+
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+
+.shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.p-6 {
+  padding: 1.5rem;
+}
+
+.px-4 {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.py-2 {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.inline-flex {
+  display: inline-flex;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.space-x-2 > * + * {
+  margin-left: 0.5rem;
+}
+
+.space-x-4 > * + * {
+  margin-left: 1rem;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.gap-8 {
+  gap: 2rem;
+}
+
+.grid {
+  display: grid;
+}
+
+.grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 768px) {
+  .md\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
