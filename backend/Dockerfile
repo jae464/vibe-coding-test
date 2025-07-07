@@ -8,7 +8,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # 의존성 설치
-RUN npm ci --only=production && npm cache clean --force
+# RUN npm ci --only=production && npm cache clean --force
+RUN npm install
 
 # 소스 코드 복사
 COPY . .
@@ -23,8 +24,8 @@ RUN npm run build
 EXPOSE 3001
 
 # 헬스체크 추가
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3001/health || exit 1
+# HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+#   CMD curl -f http://localhost:3001/health || exit 1
 
 # 애플리케이션 실행
 CMD ["npm", "run", "start:prod"] 

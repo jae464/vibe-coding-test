@@ -65,7 +65,7 @@ services:
       NODE_ENV: development
       
       # 채점 시스템 설정
-      JUDGE_SERVICE_URL: http://judge:3002
+      # JUDGE_SERVICE_URL: http://judge:3002
     ports:
       - "3001:3001"
     volumes:
@@ -81,21 +81,21 @@ services:
     restart: unless-stopped
 
   # 채점 서비스
-  judge:
-    build:
-      context: ./backend/docker-judge
-      dockerfile: Dockerfile
-    container_name: algorithm-judge
-    environment:
-      PORT: 3002
-      NODE_ENV: development
-    ports:
-      - "3002:3002"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - algorithm-network
-    restart: unless-stopped
+  # judge:
+  #   build:
+  #     context: ./backend/docker-judge
+  #     dockerfile: Dockerfile
+  #   container_name: algorithm-judge
+  #   environment:
+  #     PORT: 3002
+  #     NODE_ENV: development
+  #   ports:
+  #     - "3002:3002"
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   networks:
+  #     - algorithm-network
+  #   restart: unless-stopped
 
   # 프론트엔드 (선택사항)
   frontend:
