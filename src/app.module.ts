@@ -8,6 +8,8 @@ import { RoomsModule } from './modules/rooms/rooms.module';
 import { ProblemsModule } from './modules/problems/problems.module';
 import { SubmissionsModule } from './modules/submissions/submissions.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { WebsocketModule } from './websocket/websocket.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { AuthModule } from './modules/auth/auth.module';
     ProblemsModule,
     SubmissionsModule,
     AuthModule,
+    WebsocketModule,
+    ChatModule,
   ],
 })
 export class AppModule {} 

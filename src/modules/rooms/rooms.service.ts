@@ -5,6 +5,7 @@ import { Room } from '../../entities/Room';
 import { RoomUser } from '../../entities/RoomUser';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { JoinRoomDto } from './dto/join-room.dto';
+import { RoomGateway } from '../../websocket/room.gateway';
 
 @Injectable()
 export class RoomsService {
@@ -13,6 +14,7 @@ export class RoomsService {
     private roomsRepository: Repository<Room>,
     @InjectRepository(RoomUser)
     private roomUsersRepository: Repository<RoomUser>,
+    private roomGateway: RoomGateway,
   ) {}
 
   async create(createRoomDto: CreateRoomDto): Promise<Room> {
@@ -94,7 +96,23 @@ export class RoomsService {
     room.lastCode = code;
     room.lastEditorId = editorId;
     
-    return this.roomsRepository.save(room);
+    const updatedRoom = await this.roomsRepository.save(room);
+
+    // WebSocket을 통해 코드 변경을 브로드캐스트
+    // TODO: 사용자 정보를 가져와서 editorName 전달
+    await this.roomGateway.broadcastCodeChange(roomId, code, editorId, 'Unknown User');
+
+    return updatedRoom;
+  }
+
+  async sendChatMessage(roomId: number, userId: number, username: string, message: string): Promise<void> {
+    // WebSocket을 통해 채팅 메시지를 브로드캐스트
+    await this.roomGateway.broadcastChatMessage(roomId, userId, username, message);
+  }
+
+  async broadcastSubmissionResult(roomId: number, submissionId: number, problemId: number, status: string, resultMessage?: string): Promise<void> {
+    // WebSocket을 통해 제출 결과를 브로드캐스트
+    await this.roomGateway.broadcastSubmissionResult(roomId, submissionId, problemId, status, resultMessage);
   }
 
   async remove(id: number): Promise<void> {
