@@ -8,24 +8,22 @@ WORKDIR /app
 COPY package*.json ./
 
 # 의존성 설치
-RUN npm ci --only=production && npm cache clean --force
-# RUN npm install
+RUN npm install
 
 # 소스 코드 복사
 COPY . .
 
 # TypeORM CLI 설치
-RUN npm install -g @nestjs/cli
+# RUN npm install -g @nestjs/cli
 
 # 빌드
 RUN npm run build
 
-# 포트 노출
-EXPOSE 3001
+# 빌드 결과 확인
+RUN ls -la dist/
 
-# 헬스체크 추가
-# HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-#   CMD curl -f http://localhost:3001/health || exit 1
+# 포트 노출
+# EXPOSE 3001
 
 # 애플리케이션 실행
 CMD ["npm", "run", "start:prod"] 

@@ -35,7 +35,7 @@ COPY --from=base /app/.next ./.next
 # COPY --from=base /app/public ./public
 
 # 포트 노출
-EXPOSE 3000
+# EXPOSE 3000
 
 # 헬스체크 추가
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
