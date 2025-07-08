@@ -45,6 +45,7 @@ export interface Room {
   contest?: Contest;
   problem?: Problem;
   participants?: RoomUser[];
+  participantCount?: number;
 }
 
 // 방 참가자 타입

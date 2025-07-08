@@ -249,6 +249,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     editorId: number,
     editorName: string
   ) {
+    console.log(`[WebSocket] Broadcasting code change to room ${roomId}`);
     this.server.to(`room_${roomId}`).emit("code_updated", {
       code,
       editorId,
@@ -263,6 +264,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     username: string,
     message: string
   ) {
+    console.log(`[WebSocket] Broadcasting chat message to room ${roomId}`);
     this.server.to(`room_${roomId}`).emit("new_message", {
       userId,
       username,
@@ -278,11 +280,20 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     status: string,
     resultMessage?: string
   ) {
+    console.log(`[WebSocket] Broadcasting submission result to room ${roomId}`);
     this.server.to(`room_${roomId}`).emit("submission_updated", {
       submissionId,
       problemId,
       status,
       resultMessage,
+      timestamp: new Date(),
+    });
+  }
+
+  async broadcastRoomUpdate(roomId: number, roomData: any) {
+    console.log(`[WebSocket] Broadcasting room update to room ${roomId}`);
+    this.server.to(`room_${roomId}`).emit("room_updated", {
+      ...roomData,
       timestamp: new Date(),
     });
   }

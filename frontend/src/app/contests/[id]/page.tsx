@@ -77,7 +77,7 @@ export default function ContestDetailPage() {
     router.push(`/problems/${problemId}`);
   };
 
-  const handleRoomClick = (roomId: string) => {
+  const handleRoomClick = (roomId: number) => {
     router.push(`/rooms/${roomId}`);
   };
 
@@ -334,8 +334,10 @@ export default function ContestDetailPage() {
                           {room.name}
                         </span>
                         <span className="text-sm text-gray-500">
-                          {room.participants?.length || 0}/
-                          {room.maxParticipants}
+                          {room.participantCount ||
+                            room.participants?.length ||
+                            0}
+                          /{room.maxParticipants}
                         </span>
                       </div>
                     ))

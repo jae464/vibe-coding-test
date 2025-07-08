@@ -35,7 +35,7 @@ export class RoomsService {
   }
 
   async findAll(): Promise<Room[]> {
-    return this.roomsRepository.find({
+    const rooms = await this.roomsRepository.find({
       relations: [
         "contest",
         "creator",
@@ -45,6 +45,13 @@ export class RoomsService {
       ],
       order: { createdAt: "DESC" },
     });
+
+    // 각 방의 참가자 수를 계산하여 추가
+    for (const room of rooms) {
+      room["participantCount"] = room.roomUsers?.length || 0;
+    }
+
+    return rooms;
   }
 
   async findOne(id: number): Promise<Room> {
@@ -63,11 +70,14 @@ export class RoomsService {
       throw new NotFoundException("방을 찾을 수 없습니다.");
     }
 
+    // 참가자 수를 계산하여 추가
+    room["participantCount"] = room.roomUsers?.length || 0;
+
     return room;
   }
 
   async findByContest(contestId: number): Promise<Room[]> {
-    return this.roomsRepository.find({
+    const rooms = await this.roomsRepository.find({
       where: { contestId },
       relations: [
         "contest",
@@ -78,6 +88,13 @@ export class RoomsService {
       ],
       order: { createdAt: "DESC" },
     });
+
+    // 각 방의 참가자 수를 계산하여 추가
+    for (const room of rooms) {
+      room["participantCount"] = room.roomUsers?.length || 0;
+    }
+
+    return rooms;
   }
 
   async joinRoom(joinRoomDto: JoinRoomDto): Promise<RoomUser> {
@@ -94,7 +111,17 @@ export class RoomsService {
     }
 
     const roomUser = this.roomUsersRepository.create(joinRoomDto);
-    return this.roomUsersRepository.save(roomUser);
+    const savedRoomUser = await this.roomUsersRepository.save(roomUser);
+
+    // 방 정보를 가져와서 참가자 수 업데이트를 브로드캐스트
+    const room = await this.findOne(joinRoomDto.roomId);
+    await this.roomGateway.broadcastRoomUpdate(joinRoomDto.roomId, {
+      roomId: joinRoomDto.roomId,
+      participantCount: room.roomUsers?.length || 0,
+      participants: room.roomUsers || [],
+    });
+
+    return savedRoomUser;
   }
 
   async leaveRoom(roomId: number, userId: number): Promise<void> {
@@ -110,6 +137,14 @@ export class RoomsService {
     }
 
     await this.roomUsersRepository.remove(roomUser);
+
+    // 방 정보를 가져와서 참가자 수 업데이트를 브로드캐스트
+    const room = await this.findOne(roomId);
+    await this.roomGateway.broadcastRoomUpdate(roomId, {
+      roomId: roomId,
+      participantCount: room.roomUsers?.length || 0,
+      participants: room.roomUsers || [],
+    });
   }
 
   async updateCode(

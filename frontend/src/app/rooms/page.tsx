@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
 import { roomsAPI, contestsAPI } from "@/lib/api";
 import { Room, Contest } from "@/types";
 import Navigation from "@/components/layout/Navigation";
+import { io, Socket } from "socket.io-client";
 import {
   Plus,
   Users,
@@ -35,6 +36,44 @@ export default function RoomsPage() {
 
   const router = useRouter();
   const { user, token } = useAuthStore();
+  const socketRef = useRef<Socket | null>(null);
+
+  // WebSocket 연결 및 이벤트 리스너
+  useEffect(() => {
+    if (!token) return;
+
+    // WebSocket 연결
+    socketRef.current = io("http://localhost:3001/rooms", {
+      auth: { token },
+      transports: ["websocket"],
+    });
+
+    // 방 업데이트 이벤트 리스너
+    const handleRoomUpdate = (data: any) => {
+      console.log("방 업데이트 수신:", data);
+      setRooms((prevRooms) =>
+        prevRooms.map((room) => {
+          if (room.id === data.roomId) {
+            return {
+              ...room,
+              participantCount: data.participantCount,
+              participants: data.participants || room.participants,
+            };
+          }
+          return room;
+        })
+      );
+    };
+
+    socketRef.current.on("room_updated", handleRoomUpdate);
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off("room_updated", handleRoomUpdate);
+        socketRef.current.disconnect();
+      }
+    };
+  }, [token]);
 
   // 데이터 로드
   useEffect(() => {
@@ -95,7 +134,11 @@ export default function RoomsPage() {
       });
 
       if (response.success && response.data) {
-        setRooms([response.data, ...rooms]);
+        // 방 목록 새로고침
+        const roomsResponse = await roomsAPI.getAll();
+        if (roomsResponse.success && roomsResponse.data) {
+          setRooms(roomsResponse.data);
+        }
         setShowCreateModal(false);
         setCreateForm({
           name: "",
@@ -126,6 +169,11 @@ export default function RoomsPage() {
       setJoiningRooms((prev) => new Set(Array.from(prev).concat(roomId)));
       const response = await roomsAPI.join(roomId.toString(), user?.id || 0);
       if (response.success) {
+        // 방 목록 새로고침
+        const roomsResponse = await roomsAPI.getAll();
+        if (roomsResponse.success && roomsResponse.data) {
+          setRooms(roomsResponse.data);
+        }
         router.push(`/rooms/${roomId}`);
       }
     } catch (error: any) {
@@ -232,7 +280,10 @@ export default function RoomsPage() {
                   </div>
                   <div className="flex items-center space-x-1 text-sm text-gray-500">
                     <Users className="h-4 w-4" />
-                    <span>{room.participants?.length || 0}명</span>
+                    <span>
+                      {room.participantCount || room.participants?.length || 0}
+                      명
+                    </span>
                   </div>
                 </div>
 
