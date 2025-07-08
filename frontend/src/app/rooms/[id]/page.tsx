@@ -528,8 +528,8 @@ export default function RoomPage() {
       <Navigation />
 
       <div className="h-[calc(100vh-4rem)] flex flex-col">
-        {/* 헤더 */}
-        <div className="bg-white border-b px-6 py-4">
+        {/* 헤더 - 고정 */}
+        <div className="bg-white border-b px-6 py-4 flex-shrink-0">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{room.name}</h1>
@@ -581,7 +581,7 @@ export default function RoomPage() {
         </div>
 
         {/* 메인 컨텐츠 */}
-        <div className="flex-1 flex">
+        <div className="flex-1 flex overflow-hidden">
           {/* 왼쪽 패널 - 코드 에디터 */}
           <div className="flex-1 flex flex-col min-w-0">
             {/* 코드 에디터 */}
@@ -604,7 +604,7 @@ export default function RoomPage() {
             </div>
 
             {/* 터미널 패널 */}
-            <div className="h-64 bg-white border-t border-gray-200">
+            <div className="h-64 bg-white border-t border-gray-200 flex-shrink-0">
               <div className="flex items-center justify-between p-3 border-b border-gray-200">
                 <div className="flex items-center space-x-2">
                   <Terminal className="h-4 w-4 text-green-500" />
@@ -722,10 +722,10 @@ export default function RoomPage() {
             <>
               <div
                 ref={sidebarRef}
-                className="bg-white border-l border-gray-200 flex-shrink-0"
+                className="bg-white border-l border-gray-200 flex-shrink-0 flex flex-col"
                 style={{ width: `${sidebarWidth}px` }}
               >
-                <div className="flex border-b border-gray-200">
+                <div className="flex border-b border-gray-200 flex-shrink-0">
                   <button
                     onClick={() => setActiveTab("problem")}
                     className={`flex-1 px-4 py-3 text-sm font-medium ${
@@ -761,9 +761,9 @@ export default function RoomPage() {
                   </button>
                 </div>
 
-                <div className="p-4 h-full overflow-y-auto">
+                <div className="flex-1 overflow-hidden">
                   {activeTab === "problem" && (
-                    <div>
+                    <div className="h-full overflow-y-auto p-4">
                       {problem ? (
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900 mb-3">
@@ -807,7 +807,7 @@ export default function RoomPage() {
 
                   {activeTab === "chat" && (
                     <div className="h-full flex flex-col">
-                      <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+                      <div className="flex-1 overflow-y-auto p-4 space-y-3">
                         {chatMessages.map((message, index) => {
                           const isOwnMessage = message.userId === user?.id;
                           return (
@@ -841,30 +841,32 @@ export default function RoomPage() {
                           );
                         })}
                       </div>
-                      <div className="flex space-x-2">
-                        <input
-                          type="text"
-                          value={newMessage}
-                          onChange={(e) => setNewMessage(e.target.value)}
-                          onKeyPress={(e) =>
-                            e.key === "Enter" && handleSendMessage()
-                          }
-                          placeholder="메시지를 입력하세요..."
-                          className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm"
-                        />
-                        <button
-                          onClick={handleSendMessage}
-                          disabled={!newMessage.trim() || !connected}
-                          className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-3 py-2 rounded-md text-sm"
-                        >
-                          <Send className="h-4 w-4" />
-                        </button>
+                      <div className="flex-shrink-0 p-4 border-t border-gray-200">
+                        <div className="flex space-x-2">
+                          <input
+                            type="text"
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            onKeyPress={(e) =>
+                              e.key === "Enter" && handleSendMessage()
+                            }
+                            placeholder="메시지를 입력하세요..."
+                            className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm"
+                          />
+                          <button
+                            onClick={handleSendMessage}
+                            disabled={!newMessage.trim() || !connected}
+                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-3 py-2 rounded-md text-sm"
+                          >
+                            <Send className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
 
                   {activeTab === "submissions" && (
-                    <div className="space-y-3">
+                    <div className="h-full overflow-y-auto p-4 space-y-3">
                       {submissions.map((submission) => {
                         const isPending = pendingSubmissions.has(submission.id);
                         return (
@@ -918,28 +920,21 @@ export default function RoomPage() {
                                       메모리 초과
                                     </span>
                                   </>
-                                ) : submission.status === "RUNTIME_ERROR" ? (
-                                  <>
-                                    <XCircle className="h-4 w-4 text-red-500" />
-                                    <span className="text-xs font-medium text-red-600">
-                                      런타임 오류
-                                    </span>
-                                  </>
                                 ) : (
                                   <>
-                                    <Clock className="h-4 w-4 text-yellow-500" />
-                                    <span className="text-xs font-medium text-yellow-600">
+                                    <Clock className="h-4 w-4 text-gray-500" />
+                                    <span className="text-xs font-medium text-gray-600">
                                       {submission.status}
                                     </span>
                                   </>
                                 )}
                               </div>
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-gray-500 mb-2">
                               {new Date(submission.createdAt).toLocaleString()}
                             </div>
                             {submission.executionTime && (
-                              <div className="text-xs text-gray-500 mt-1">
+                              <div className="text-xs text-gray-500">
                                 실행 시간: {submission.executionTime}ms
                               </div>
                             )}
@@ -951,23 +946,15 @@ export default function RoomPage() {
                           </div>
                         );
                       })}
-                      {submissions.length === 0 && (
-                        <div className="text-center text-gray-500 py-8">
-                          <Zap className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                          <p>아직 제출된 코드가 없습니다.</p>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
               </div>
-
               {/* 리사이즈 핸들 */}
               <div
                 ref={resizeRef}
-                className="w-1 bg-gray-200 hover:bg-gray-300 cursor-col-resize flex-shrink-0"
+                className="w-1 bg-gray-300 hover:bg-gray-400 cursor-col-resize flex-shrink-0"
                 onMouseDown={handleResizeStart}
-                style={{ cursor: isResizing ? "col-resize" : "default" }}
               />
             </>
           )}
