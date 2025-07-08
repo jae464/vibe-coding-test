@@ -292,7 +292,14 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async broadcastRoomUpdate(roomId: number, roomData: any) {
     console.log(`[WebSocket] Broadcasting room update to room ${roomId}`);
+    // 방 내부 사용자들에게 전송
     this.server.to(`room_${roomId}`).emit("room_updated", {
+      ...roomData,
+      timestamp: new Date(),
+    });
+
+    // 방 목록 페이지 사용자들에게도 전송 (전체 브로드캐스트)
+    this.server.emit("room_list_updated", {
       ...roomData,
       timestamp: new Date(),
     });

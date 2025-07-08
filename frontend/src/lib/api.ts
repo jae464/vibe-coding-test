@@ -193,8 +193,8 @@ export const roomsAPI = {
     return response.data;
   },
 
-  leave: async (roomId: string): Promise<ApiResponse<void>> => {
-    const response = await apiClient.post(`/rooms/${roomId}/leave`);
+  leave: async (roomId: string, userId: number): Promise<ApiResponse<void>> => {
+    const response = await apiClient.post(`/rooms/${roomId}/leave`, { userId });
     return response.data;
   },
 

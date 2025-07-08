@@ -51,25 +51,27 @@ export default function RoomsPage() {
     // 방 업데이트 이벤트 리스너
     const handleRoomUpdate = (data: any) => {
       console.log("방 업데이트 수신:", data);
-      setRooms((prevRooms) =>
-        prevRooms.map((room) => {
-          if (room.id === data.roomId) {
-            return {
-              ...room,
-              participantCount: data.participantCount,
-              participants: data.participants || room.participants,
-            };
+      // 방 목록을 새로고침하여 최신 상태를 반영
+      const refreshRooms = async () => {
+        try {
+          const roomsResponse = await roomsAPI.getAll();
+          if (roomsResponse.success && roomsResponse.data) {
+            setRooms(roomsResponse.data);
           }
-          return room;
-        })
-      );
+        } catch (error) {
+          console.error("방 목록 새로고침 실패:", error);
+        }
+      };
+      refreshRooms();
     };
 
     socketRef.current.on("room_updated", handleRoomUpdate);
+    socketRef.current.on("room_list_updated", handleRoomUpdate);
 
     return () => {
       if (socketRef.current) {
         socketRef.current.off("room_updated", handleRoomUpdate);
+        socketRef.current.off("room_list_updated", handleRoomUpdate);
         socketRef.current.disconnect();
       }
     };
@@ -174,7 +176,10 @@ export default function RoomsPage() {
         if (roomsResponse.success && roomsResponse.data) {
           setRooms(roomsResponse.data);
         }
-        router.push(`/rooms/${roomId}`);
+        // 잠시 대기 후 방으로 이동
+        setTimeout(() => {
+          router.push(`/rooms/${roomId}`);
+        }, 500);
       }
     } catch (error: any) {
       console.error("방 참가 실패:", error);

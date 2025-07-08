@@ -450,6 +450,21 @@ export default function RoomPage() {
     setSidebarVisible(!sidebarVisible);
   };
 
+  // 방 퇴장
+  const handleLeaveRoom = async () => {
+    if (!confirm("정말로 방을 나가시겠습니까?")) {
+      return;
+    }
+
+    try {
+      await roomsAPI.leave(roomId, user?.id || 0);
+      router.push("/rooms");
+    } catch (error) {
+      console.error("방 퇴장 실패:", error);
+      alert("방 퇴장에 실패했습니다.");
+    }
+  };
+
   if (!room) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -495,6 +510,13 @@ export default function RoomPage() {
                   ))}
                 </select>
               </div>
+              {/* 방 퇴장 버튼 */}
+              <button
+                onClick={handleLeaveRoom}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+              >
+                방 나가기
+              </button>
               {/* 사이드바 토글 버튼 */}
               <button
                 onClick={toggleSidebar}

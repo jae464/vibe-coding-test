@@ -25,12 +25,7 @@ export class RoomsService {
     const room = this.roomsRepository.create(createRoomDto);
     const savedRoom = await this.roomsRepository.save(room);
 
-    // 방 생성자를 자동으로 참가자로 추가
-    await this.joinRoom({
-      roomId: savedRoom.id,
-      userId: createRoomDto.createdBy,
-    });
-
+    // 방 생성자는 자동으로 참가하지 않음 (사용자가 직접 참가해야 함)
     return savedRoom;
   }
 
