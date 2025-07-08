@@ -31,7 +31,7 @@ export class RoomsController {
         "대회별 방 목록을 성공적으로 조회했습니다."
       );
     }
-    const rooms = await this.roomsService.findAll();
+    const rooms = await this.roomsService.findAllWithConnectedCount();
     return ApiResponseDto.success(rooms, "방 목록을 성공적으로 조회했습니다.");
   }
 
@@ -43,7 +43,8 @@ export class RoomsController {
 
   @Get(":roomId/participants")
   async getParticipants(@Param("roomId") roomId: string) {
-    const participants = await this.roomsService.getParticipants(+roomId);
+    const participants =
+      await this.roomsService.getConnectedParticipants(+roomId);
     return ApiResponseDto.success(
       participants,
       "방 참가자 목록을 성공적으로 조회했습니다."

@@ -56,13 +56,30 @@ export default function ContestDetailPage() {
       refreshRooms();
     };
 
+    // 방 목록 업데이트 이벤트 리스너
+    const handleRoomListUpdate = (data: any) => {
+      console.log("대회 상세 방 목록 업데이트 수신:", data);
+      // 특정 방의 참가자 수만 업데이트
+      setRooms((prevRooms) =>
+        prevRooms.map((room) => {
+          if (room.id === data.roomId) {
+            return {
+              ...room,
+              participantCount: data.participantCount,
+            };
+          }
+          return room;
+        })
+      );
+    };
+
     socketRef.current.on("room_updated", handleRoomUpdate);
-    socketRef.current.on("room_list_updated", handleRoomUpdate);
+    socketRef.current.on("room_list_updated", handleRoomListUpdate);
 
     return () => {
       if (socketRef.current) {
         socketRef.current.off("room_updated", handleRoomUpdate);
-        socketRef.current.off("room_list_updated", handleRoomUpdate);
+        socketRef.current.off("room_list_updated", handleRoomListUpdate);
         socketRef.current.disconnect();
       }
     };

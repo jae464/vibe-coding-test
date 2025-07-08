@@ -123,6 +123,17 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       currentCode.substring(0, 100) + "..."
     );
 
+    // 방 참가자 수 업데이트를 모든 클라이언트에게 브로드캐스트
+    const roomParticipants = Array.from(this.connectedUsers.values()).filter(
+      (user) => user.roomId === numericRoomId
+    );
+    this.server.emit("room_list_updated", {
+      roomId: numericRoomId,
+      participantCount: roomParticipants.length,
+      participants: roomParticipants,
+      timestamp: new Date(),
+    });
+
     console.log(`[WebSocket] User ${username} joined room ${numericRoomId}`);
   }
 
@@ -157,6 +168,17 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       timestamp: new Date(),
     });
     console.log(`[WebSocket] Emitted user_left to room_${numericRoomId}`);
+
+    // 방 참가자 수 업데이트를 모든 클라이언트에게 브로드캐스트
+    const roomParticipants = Array.from(this.connectedUsers.values()).filter(
+      (user) => user.roomId === numericRoomId
+    );
+    this.server.emit("room_list_updated", {
+      roomId: numericRoomId,
+      participantCount: roomParticipants.length,
+      participants: roomParticipants,
+      timestamp: new Date(),
+    });
 
     console.log(`[WebSocket] User ${username} left room ${numericRoomId}`);
   }
@@ -303,5 +325,13 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       ...roomData,
       timestamp: new Date(),
     });
+  }
+
+  // 연결된 사용자 목록 가져오기
+  getConnectedUsers(): Map<
+    string,
+    { userId: number; username: string; roomId: number; clientId: string }
+  > {
+    return this.connectedUsers;
   }
 }

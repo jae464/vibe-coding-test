@@ -309,12 +309,12 @@ export default function RoomPage() {
           }
         };
 
-        // const loadParticipants = async () => {
-        //   const response = await roomsAPI.getParticipants(roomId);
-        //   if (response.success && response.data) {
-        //     setParticipants(response.data);
-        //   }
-        // };
+        const loadParticipants = async () => {
+          const response = await roomsAPI.getParticipants(roomId);
+          if (response.success && response.data) {
+            setParticipants(response.data);
+          }
+        };
 
         const loadSubmissions = async () => {
           const response = await submissionsAPI.getByRoom(roomId);

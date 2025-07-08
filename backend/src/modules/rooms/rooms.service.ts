@@ -118,13 +118,19 @@ export class RoomsService {
       `[RoomsService] 방 참가 성공: roomId=${joinRoomDto.roomId}, userId=${joinRoomDto.userId}`
     );
 
-    // 방 정보를 가져와서 참가자 수 업데이트를 브로드캐스트
-    const room = await this.findOne(joinRoomDto.roomId);
-    console.log(`[RoomsService] 방 참가자 수: ${room.roomUsers?.length || 0}`);
+    // WebSocket 연결 상태 기반으로 참가자 수 계산
+    const connectedParticipants = await this.getConnectedParticipants(
+      joinRoomDto.roomId
+    );
+    console.log(
+      `[RoomsService] WebSocket 연결된 참가자 수: ${connectedParticipants}`
+    );
+
+    // 방 업데이트를 WebSocket을 통해 브로드캐스트
     await this.roomGateway.broadcastRoomUpdate(joinRoomDto.roomId, {
       roomId: joinRoomDto.roomId,
-      participantCount: room.roomUsers?.length || 0,
-      participants: room.roomUsers || [],
+      participantCount: connectedParticipants,
+      participants: [], // WebSocket에서 실제 참가자 목록을 관리
     });
 
     return savedRoomUser;
@@ -154,13 +160,17 @@ export class RoomsService {
       `[RoomsService] 방 퇴장 성공: roomId=${roomId}, userId=${userId}`
     );
 
-    // 방 정보를 가져와서 참가자 수 업데이트를 브로드캐스트
-    const room = await this.findOne(roomId);
-    console.log(`[RoomsService] 방 참가자 수: ${room.roomUsers?.length || 0}`);
+    // WebSocket 연결 상태 기반으로 참가자 수 계산
+    const connectedParticipants = await this.getConnectedParticipants(roomId);
+    console.log(
+      `[RoomsService] WebSocket 연결된 참가자 수: ${connectedParticipants}`
+    );
+
+    // 방 업데이트를 WebSocket을 통해 브로드캐스트
     await this.roomGateway.broadcastRoomUpdate(roomId, {
       roomId: roomId,
-      participantCount: room.roomUsers?.length || 0,
-      participants: room.roomUsers || [],
+      participantCount: connectedParticipants,
+      participants: [], // WebSocket에서 실제 참가자 목록을 관리
     });
   }
 
@@ -222,5 +232,36 @@ export class RoomsService {
       relations: ["user"],
       order: { joinedAt: "ASC" },
     });
+  }
+
+  // WebSocket 연결 상태를 기반으로 참가자 수 가져오기
+  async getConnectedParticipants(roomId: number): Promise<number> {
+    // WebSocket Gateway에서 연결된 사용자 수를 가져옴
+    const connectedUsers = this.roomGateway.getConnectedUsers();
+    const roomParticipants = Array.from(connectedUsers.values()).filter(
+      (user) => user.roomId === roomId
+    );
+    return roomParticipants.length;
+  }
+
+  // 방 목록 조회 시 WebSocket 연결 상태 기반 참가자 수 포함
+  async findAllWithConnectedCount(): Promise<Room[]> {
+    const rooms = await this.roomsRepository.find({
+      relations: [
+        "contest",
+        "creator",
+        "roomUsers",
+        "roomUsers.user",
+        "problem",
+      ],
+      order: { createdAt: "DESC" },
+    });
+
+    // 각 방의 실제 연결된 참가자 수를 계산하여 추가
+    for (const room of rooms) {
+      room["participantCount"] = await this.getConnectedParticipants(room.id);
+    }
+
+    return rooms;
   }
 }
