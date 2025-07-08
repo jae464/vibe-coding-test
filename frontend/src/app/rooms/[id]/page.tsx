@@ -198,17 +198,18 @@ export default function RoomPage() {
 
     try {
       const filename = `main.${getFileExtension(language)}`;
-
+      console.log("파일을 저장합니다.", filename);
       // 코드를 파일로 저장
       await terminalAPI.createFile(terminalSession.id, filename, code);
+      console.log("code", code);
 
-      // 실행 명령어 생성
-      const runCommand = getRunCommand(language, filename);
-
+      // 언어별 도구 설치 및 실행
+      const installAndRunCommand = getInstallAndRunCommand(language, filename);
+      console.log("installAndRunCommand", installAndRunCommand);
       // 명령어 실행
       const commandEntry: TerminalCommand = {
         sessionId: terminalSession.id,
-        command: runCommand,
+        command: installAndRunCommand,
         output: "",
         exitCode: 0,
       };
@@ -216,12 +217,14 @@ export default function RoomPage() {
 
       const response = await terminalAPI.executeCommand(
         terminalSession.id,
-        runCommand
+        installAndRunCommand
       );
       if (response.success && response.data) {
         setTerminalCommands((prev) =>
           prev.map((cmd) =>
-            cmd.command === runCommand ? { ...cmd, ...response.data } : cmd
+            cmd.command === installAndRunCommand
+              ? { ...cmd, ...response.data }
+              : cmd
           )
         );
       }
@@ -242,7 +245,25 @@ export default function RoomPage() {
     return extensions[lang as keyof typeof extensions] || "js";
   };
 
-  // 실행 명령어 가져오기
+  // 설치 및 실행 명령어 가져오기
+  const getInstallAndRunCommand = (lang: string, filename: string) => {
+    const commands = {
+      javascript: `apt-get install -y nodejs && node ${filename}`,
+      python: `apt-get install -y python3 && python3 ${filename}`,
+      java: `apt-get install -y openjdk-17-jdk && javac ${filename} && java ${filename.replace(
+        ".java",
+        ""
+      )}`,
+      cpp: `apt-get install -y g++ && g++ ${filename} -o ${filename.replace(
+        ".cpp",
+        ""
+      )} && ./${filename.replace(".cpp", "")}`,
+      bash: `bash ${filename}`,
+    };
+    return commands[lang as keyof typeof commands] || `node ${filename}`;
+  };
+
+  // 실행 명령어 가져오기 (기존 함수 유지)
   const getRunCommand = (lang: string, filename: string) => {
     const commands = {
       javascript: `node ${filename}`,

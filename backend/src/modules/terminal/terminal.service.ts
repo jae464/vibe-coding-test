@@ -49,7 +49,6 @@ export class TerminalService {
       await new Promise<void>((resolve, reject) => {
         this.docker.pull(image, (err, stream) => {
           if (err) return reject(err);
-          // pull 진행 로그를 무시하거나 찍어줄 수 있습니다.
           this.docker.modem.followProgress(stream, (pullErr) =>
             pullErr ? reject(pullErr) : resolve()
           );
@@ -81,6 +80,68 @@ export class TerminalService {
       });
 
       await container.start();
+
+      // 기본 도구 설치 (apt-get update만 먼저 실행)
+      try {
+        const exec = await container.exec({
+          AttachStdout: true,
+          AttachStderr: true,
+          Cmd: ["/bin/bash", "-c", "apt-get update -y"],
+        });
+
+        const stream = await exec.start({ hijack: true, Tty: false });
+
+        await new Promise<void>((resolve, reject) => {
+          let output = "";
+
+          stream.on("error", (err) => {
+            // this.logger.error(`apt-get update stream error: ${err.message}`);
+            console.log(`apt-get update stream error: ${err.message}`);
+            reject(err);
+          });
+
+          stream.on("end", async () => {
+            const inspectData = await exec.inspect();
+            this.logger.log(
+              `apt-get update finished (exit code ${inspectData.ExitCode})`
+            );
+            resolve();
+          });
+
+          // multiplexed 분리
+          container.modem.demuxStream(
+            stream,
+            { write: (chunk) => (output += chunk.toString()) },
+            { write: (chunk) => (output += chunk.toString()) }
+          );
+        });
+
+        // await new Promise<void>((resolve, reject) => {
+        //   exec.start({}, (err, stream) => {
+        //     if (err) {
+        //       this.logger.error(
+        //         `Failed to update package list: ${err.message}`
+        //       );
+        //       resolve(); // 에러가 있어도 계속 진행
+        //       return;
+        //     }
+
+        //     stream.on("end", () => {
+        //       this.logger.log("Package list updated successfully");
+        //       resolve();
+        //     });
+
+        //     stream.on("error", (err) => {
+        //       this.logger.error(
+        //         `Failed to update package list: ${err.message}`
+        //       );
+        //       resolve(); // 에러가 있어도 계속 진행
+        //     });
+        //   });
+        // });
+      } catch (error) {
+        this.logger.error(`Failed to update package list: ${error.message}`);
+      }
 
       const session: TerminalSession = {
         id: sessionId,
@@ -120,33 +181,52 @@ export class TerminalService {
       session.lastActivity = new Date();
 
       const container = this.docker.getContainer(session.containerId);
+
+      // 컨테이너 상태 확인
+      const containerInfo = await container.inspect();
+      if (!containerInfo.State.Running) {
+        throw new Error("컨테이너가 실행되지 않고 있습니다.");
+      }
+
       const exec = await container.exec({
         AttachStdout: true,
         AttachStderr: true,
         Cmd: ["/bin/bash", "-c", command],
       });
 
-      let output = "";
-      let error = "";
+      console.log("exec created for command:", exec.id);
 
       return new Promise((resolve, reject) => {
-        exec.start({}, (err, stream) => {
+        exec.start({ hijack: true, Tty: false }, (err, stream) => {
+          console.log("exec.start callback called for command");
           if (err) {
+            console.error("exec.start error:", err);
             reject(err);
             return;
           }
 
-          stream.on("data", (chunk) => {
-            output += chunk.toString();
-          });
+          if (!stream) {
+            console.error("stream is null for command");
+            reject(new Error("스트림을 생성할 수 없습니다."));
+            return;
+          }
 
-          stream.on("error", (err) => {
-            error += err.toString();
-          });
+          let output = "";
+          let error = "";
+
+          // multiplexed 스트림 분리
+          container.modem.demuxStream(
+            stream,
+            { write: (chunk) => (output += chunk.toString()) },
+            { write: (chunk) => (error += chunk.toString()) }
+          );
 
           stream.on("end", async () => {
+            console.log("command stream ended");
             try {
               const inspect = await exec.inspect();
+              console.log("command exec inspect:", inspect);
+
               const result: TerminalCommand = {
                 sessionId,
                 command,
@@ -156,15 +236,27 @@ export class TerminalService {
               };
 
               resolve(result);
-            } catch (err) {
-              reject(err);
+            } catch (inspectErr) {
+              console.error("exec.inspect error for command:", inspectErr);
+              reject(inspectErr);
             }
           });
+
+          stream.on("error", (streamErr) => {
+            console.error("command stream error:", streamErr);
+            reject(streamErr);
+          });
+
+          // 타임아웃 설정 (30초)
+          setTimeout(() => {
+            console.error("command exec.start timeout");
+            reject(new Error("명령어 실행이 타임아웃되었습니다."));
+          }, 30000);
         });
       });
     } catch (error) {
       this.logger.error(`Failed to execute command: ${error.message}`);
-      throw new Error("명령어 실행에 실패했습니다.");
+      throw new Error(`명령어 실행에 실패했습니다: ${error.message}`);
     }
   }
 
@@ -178,43 +270,101 @@ export class TerminalService {
   ): Promise<void> {
     try {
       const session = this.activeSessions.get(sessionId);
+      console.log("session", session);
       if (!session) {
         throw new Error("세션을 찾을 수 없습니다.");
       }
 
       const container = this.docker.getContainer(session.containerId);
+
+      // 컨테이너 상태 확인
+      const containerInfo = await container.inspect();
+      if (!containerInfo.State.Running) {
+        throw new Error("컨테이너가 실행되지 않고 있습니다.");
+      }
+
+      // 파일 내용을 base64로 인코딩하여 특수문자 문제 해결
+      const encodedContent = Buffer.from(content).toString("base64");
+      const command = `echo '${encodedContent}' | base64 -d > /workspace/${filename}`;
+
       const exec = await container.exec({
         AttachStdout: true,
         AttachStderr: true,
-        Cmd: [
-          "/bin/bash",
-          "-c",
-          `echo '${content.replace(/'/g, "'\"'\"'")}' > /workspace/${filename}`,
-        ],
+        Cmd: ["/bin/bash", "-c", command],
       });
 
+      console.log("exec created:", exec.id);
+
       return new Promise((resolve, reject) => {
-        exec.start({}, (err, stream) => {
+        exec.start({ hijack: true, Tty: false }, (err, stream) => {
+          console.log("exec.start callback called");
           if (err) {
+            console.error("exec.start error:", err);
             reject(err);
             return;
           }
 
-          stream.on("end", () => {
-            this.logger.log(
-              `File created: ${filename} in session: ${sessionId}`
-            );
-            resolve();
+          if (!stream) {
+            console.error("stream is null");
+            reject(new Error("스트림을 생성할 수 없습니다."));
+            return;
+          }
+
+          let output = "";
+          let error = "";
+
+          // multiplexed 스트림 분리
+          container.modem.demuxStream(
+            stream,
+            { write: (chunk) => (output += chunk.toString()) },
+            { write: (chunk) => (error += chunk.toString()) }
+          );
+
+          stream.on("end", async () => {
+            console.log("stream ended");
+            try {
+              const inspectData = await exec.inspect();
+              console.log("exec inspect:", inspectData);
+
+              if (inspectData.ExitCode !== 0) {
+                console.error(
+                  "Command failed with exit code:",
+                  inspectData.ExitCode
+                );
+                console.error("Error output:", error);
+                reject(
+                  new Error(
+                    `파일 생성 명령이 실패했습니다. Exit code: ${inspectData.ExitCode}`
+                  )
+                );
+                return;
+              }
+
+              this.logger.log(
+                `File created: ${filename} in session: ${sessionId}`
+              );
+              resolve();
+            } catch (inspectErr) {
+              console.error("exec.inspect error:", inspectErr);
+              reject(inspectErr);
+            }
           });
 
-          stream.on("error", (err) => {
-            reject(err);
+          stream.on("error", (streamErr) => {
+            console.error("stream error:", streamErr);
+            reject(streamErr);
           });
+
+          // 타임아웃 설정 (10초)
+          setTimeout(() => {
+            console.error("exec.start timeout");
+            reject(new Error("파일 생성이 타임아웃되었습니다."));
+          }, 10000);
         });
       });
     } catch (error) {
       this.logger.error(`Failed to create file: ${error.message}`);
-      throw new Error("파일 생성에 실패했습니다.");
+      throw new Error(`파일 생성에 실패했습니다: ${error.message}`);
     }
   }
 
@@ -229,6 +379,13 @@ export class TerminalService {
       }
 
       const container = this.docker.getContainer(session.containerId);
+
+      // 컨테이너 상태 확인
+      const containerInfo = await container.inspect();
+      if (!containerInfo.State.Running) {
+        throw new Error("컨테이너가 실행되지 않고 있습니다.");
+      }
+
       const exec = await container.exec({
         AttachStdout: true,
         AttachStderr: true,
@@ -238,28 +395,36 @@ export class TerminalService {
       let content = "";
 
       return new Promise((resolve, reject) => {
-        exec.start({}, (err, stream) => {
+        exec.start({ hijack: true, Tty: false }, (err, stream) => {
           if (err) {
             reject(err);
             return;
           }
 
-          stream.on("data", (chunk) => {
-            content += chunk.toString();
+          if (!stream) {
+            reject(new Error("스트림을 생성할 수 없습니다."));
+            return;
+          }
+
+          // multiplexed 스트림 분리
+          container.modem.demuxStream(
+            stream,
+            { write: (chunk) => (content += chunk.toString()) },
+            { write: (chunk) => {} } // stderr는 무시
+          );
+
+          stream.on("end", () => {
+            resolve(content);
           });
 
           stream.on("error", (err) => {
             reject(err);
           });
-
-          stream.on("end", () => {
-            resolve(content);
-          });
         });
       });
     } catch (error) {
       this.logger.error(`Failed to read file: ${error.message}`);
-      throw new Error("파일 읽기에 실패했습니다.");
+      throw new Error(`파일 읽기에 실패했습니다: ${error.message}`);
     }
   }
 
