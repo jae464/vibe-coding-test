@@ -26,19 +26,12 @@ export class DockerImageService {
       runCommand: "python3 {filename}",
       fileExtension: ".py"
     },
-    nodejs: {
-      name: "nodejs",
+    javascript: {
+      name: "javascript",
       dockerfilePath: "dockerfiles/nodejs.Dockerfile",
       imageName: "vibe-coding-nodejs",
       runCommand: "node {filename}",
       fileExtension: ".js"
-    },
-    typescript: {
-      name: "typescript",
-      dockerfilePath: "dockerfiles/nodejs.Dockerfile",
-      imageName: "vibe-coding-nodejs",
-      runCommand: "ts-node {filename}",
-      fileExtension: ".ts"
     },
     java: {
       name: "java",
