@@ -147,14 +147,24 @@ export default function RoomPage() {
     const handleBeforeUnload = () => {
       if (user?.id) {
         // 페이지를 벗어날 때 방에서 나가기
-        roomsAPI.leave(roomId, user.id).catch(console.error);
+        roomsAPI.leave(roomId, user.id).catch((error: any) => {
+          // 404 오류는 무시 (이미 방에서 나간 상태)
+          if (error.response?.status !== 404) {
+            console.error("방 퇴장 실패:", error);
+          }
+        });
       }
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden" && user?.id) {
         // 페이지가 숨겨질 때 방에서 나가기
-        roomsAPI.leave(roomId, user.id).catch(console.error);
+        roomsAPI.leave(roomId, user.id).catch((error: any) => {
+          // 404 오류는 무시 (이미 방에서 나간 상태)
+          if (error.response?.status !== 404) {
+            console.error("방 퇴장 실패:", error);
+          }
+        });
       }
     };
 
@@ -167,7 +177,12 @@ export default function RoomPage() {
 
       // 컴포넌트 언마운트 시 방에서 나가기
       if (user?.id) {
-        roomsAPI.leave(roomId, user.id).catch(console.error);
+        roomsAPI.leave(roomId, user.id).catch((error: any) => {
+          // 404 오류는 무시 (이미 방에서 나간 상태)
+          if (error.response?.status !== 404) {
+            console.error("방 퇴장 실패:", error);
+          }
+        });
       }
     };
   }, [user?.id, roomId]);
@@ -506,8 +521,16 @@ export default function RoomPage() {
     try {
       await roomsAPI.leave(roomId, user?.id || 0);
       router.push("/rooms");
-    } catch (error) {
+    } catch (error: any) {
       console.error("방 퇴장 실패:", error);
+
+      // 404 오류는 이미 방에서 나간 것으로 간주하고 페이지 이동
+      if (error.response?.status === 404) {
+        console.log("이미 방에서 나간 상태입니다.");
+        router.push("/rooms");
+        return;
+      }
+
       alert("방 퇴장에 실패했습니다.");
     }
   };
