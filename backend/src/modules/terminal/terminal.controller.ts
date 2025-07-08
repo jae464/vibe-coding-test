@@ -146,6 +146,40 @@ export class TerminalController {
     }
   }
 
+  @Post("sessions/:sessionId/run")
+  async runCode(
+    @Param("sessionId") sessionId: string,
+    @Body() body: { language: string; filename: string; code: string }
+  ) {
+    try {
+      const result = await this.terminalService.runCode(
+        sessionId,
+        body.language,
+        body.filename,
+        body.code
+      );
+      return ApiResponseDto.success(
+        result,
+        "코드가 성공적으로 실행되었습니다."
+      );
+    } catch (error) {
+      return ApiResponseDto.error(error.message);
+    }
+  }
+
+  @Get("languages")
+  async getSupportedLanguages() {
+    try {
+      const languages = this.terminalService.getSupportedLanguages();
+      return ApiResponseDto.success(
+        languages,
+        "지원하는 언어 목록을 성공적으로 조회했습니다."
+      );
+    } catch (error) {
+      return ApiResponseDto.error(error.message);
+    }
+  }
+
   @Get("system/info")
   async getSystemInfo() {
     try {

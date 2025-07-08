@@ -324,6 +324,24 @@ export const terminalAPI = {
     const response = await apiClient.get("/terminal/system/info");
     return response.data;
   },
+
+  getSupportedLanguages: async (): Promise<ApiResponse<string[]>> => {
+    const response = await apiClient.get("/terminal/languages");
+    return response.data;
+  },
+
+  runCode: async (
+    sessionId: string,
+    language: string,
+    filename: string,
+    code: string
+  ): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post(
+      `/terminal/sessions/${sessionId}/run`,
+      { language, filename, code }
+    );
+    return response.data;
+  },
 };
 
 export default apiClient;

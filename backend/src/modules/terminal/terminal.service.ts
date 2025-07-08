@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import Docker from "dockerode";
 import { v4 as uuidv4 } from "uuid";
+import { DockerImageService } from "./docker-image.service";
 
 export interface TerminalSession {
   id: string;
@@ -25,7 +26,7 @@ export class TerminalService {
   private docker: Docker;
   private activeSessions = new Map<string, TerminalSession>();
 
-  constructor() {
+  constructor(private dockerImageService: DockerImageService) {
     this.docker = new Docker({
       socketPath: "/var/run/docker.sock", // Linux
       // Windows의 경우: host: 'localhost', port: 2375
@@ -43,17 +44,28 @@ export class TerminalService {
       const sessionId = uuidv4();
       const containerName = `terminal-${sessionId}`;
 
-      // 기본 ubuntu 이미지 사용 (모든 언어 지원)
-      const image = "ubuntu:latest";
-
-      await new Promise<void>((resolve, reject) => {
-        this.docker.pull(image, (err, stream) => {
-          if (err) return reject(err);
-          this.docker.modem.followProgress(stream, (pullErr) =>
-            pullErr ? reject(pullErr) : resolve()
-          );
+      // 언어별 이미지 선택
+      let image: string;
+      if (language === "bash" || language === "shell") {
+        image = "ubuntu:latest";
+        // 기본 ubuntu 이미지 pull
+        await new Promise<void>((resolve, reject) => {
+          this.docker.pull(image, (err, stream) => {
+            if (err) return reject(err);
+            this.docker.modem.followProgress(stream, (pullErr) =>
+              pullErr ? reject(pullErr) : resolve()
+            );
+          });
         });
-      });
+      } else {
+        // 언어별 이미지 확인 및 빌드
+        await this.dockerImageService.ensureLanguageImage(language);
+        const config = this.dockerImageService.getLanguageConfig(language);
+        if (!config) {
+          throw new Error(`지원하지 않는 언어입니다: ${language}`);
+        }
+        image = config.imageName;
+      }
 
       // 컨테이너 생성
       const container = await this.docker.createContainer({
@@ -359,7 +371,7 @@ export class TerminalService {
           setTimeout(() => {
             console.error("exec.start timeout");
             reject(new Error("파일 생성이 타임아웃되었습니다."));
-          }, 10000);
+          }, 100000);
         });
       });
     } catch (error) {
@@ -491,16 +503,60 @@ export class TerminalService {
   }
 
   /**
+   * 코드 실행 (컴파일 + 실행)
+   */
+  async runCode(
+    sessionId: string,
+    language: string,
+    filename: string,
+    code: string
+  ): Promise<TerminalCommand> {
+    try {
+      // 1. 파일 생성
+      await this.createFile(sessionId, filename, code);
+
+      // 2. 언어별 실행 명령어 생성
+      const commands = this.dockerImageService.generateRunCommand(language, filename);
+
+      // 3. 컴파일이 필요한 경우 먼저 컴파일
+      if (commands.compileCommand) {
+        const compileResult = await this.executeCommand(sessionId, commands.compileCommand);
+        if (compileResult.exitCode !== 0) {
+          return {
+            sessionId,
+            command: commands.compileCommand,
+            output: compileResult.output,
+            error: compileResult.error || "컴파일 실패",
+            exitCode: compileResult.exitCode
+          };
+        }
+      }
+
+      // 4. 코드 실행
+      return await this.executeCommand(sessionId, commands.runCommand);
+    } catch (error) {
+      this.logger.error(`Failed to run code: ${error.message}`);
+      throw new Error(`코드 실행에 실패했습니다: ${error.message}`);
+    }
+  }
+
+  /**
+   * 지원하는 언어 목록 조회
+   */
+  getSupportedLanguages(): string[] {
+    return ["bash", "shell", ...this.dockerImageService.getSupportedLanguages()];
+  }
+
+  /**
    * 시스템 정보 조회
    */
   async getSystemInfo(): Promise<any> {
     try {
-      const info = await this.docker.info();
+      const dockerInfo = await this.dockerImageService.getSystemInfo();
       return {
-        containers: info.Containers,
-        images: info.Images,
-        memory: info.MemoryLimit,
-        cpu: info.NCPU,
+        ...dockerInfo,
+        supportedLanguages: this.getSupportedLanguages(),
+        activeSessions: this.activeSessions.size
       };
     } catch (error) {
       this.logger.error(`Failed to get system info: ${error.message}`);

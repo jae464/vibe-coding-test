@@ -53,7 +53,8 @@ export default function RoomPage() {
   const [problem, setProblem] = useState<Problem | null>(null);
   const [participants, setParticipants] = useState<User[]>([]);
   const [code, setCode] = useState("");
-  const [language, setLanguage] = useState("javascript");
+  const [language, setLanguage] = useState("python");
+  const [supportedLanguages, setSupportedLanguages] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<
     "problem" | "chat" | "submissions"
   >("problem");
@@ -159,57 +160,45 @@ export default function RoomPage() {
     }, 100);
   };
 
-  // 코드 저장 및 실행
-  const saveAndRunCode = async () => {
+  // 코드 실행
+  const runCode = async () => {
     if (!code.trim() || !terminalSession) return;
 
     const filename = `main.${getFileExtension(language)}`;
-    const installCommand = getInstallAndRunCommand(language, filename);
-    const runCommand = getRunCommand(language, filename);
 
     try {
-      // 파일 저장
-      await terminalAPI.createFile(terminalSession.id, filename, code);
-
-      // 설치 및 실행 명령어 실행
-      const response = await terminalAPI.executeCommand(
+      // 새로운 runCode API 사용
+      const response = await terminalAPI.runCode(
         terminalSession.id,
-        installCommand
+        language,
+        filename,
+        code
       );
+
       if (response.success && response.data) {
         setTerminalCommands((prev) => [
           ...prev,
           {
             sessionId: terminalSession.id,
-            command: installCommand,
+            command: response.data.command,
             output: response.data.output,
             error: response.data.error,
             exitCode: response.data.exitCode,
           },
         ]);
-
-        // 실행 명령어도 실행
-        if (response.data.exitCode === 0) {
-          const runResponse = await terminalAPI.executeCommand(
-            terminalSession.id,
-            runCommand
-          );
-          if (runResponse.success && runResponse.data) {
-            setTerminalCommands((prev) => [
-              ...prev,
-              {
-                sessionId: terminalSession.id,
-                command: runCommand,
-                output: runResponse.data.output,
-                error: runResponse.data.error,
-                exitCode: runResponse.data.exitCode,
-              },
-            ]);
-          }
-        }
       }
     } catch (error) {
       console.error("코드 실행 실패:", error);
+      setTerminalCommands((prev) => [
+        ...prev,
+        {
+          sessionId: terminalSession.id,
+          command: `run ${filename}`,
+          output: "",
+          error: "코드 실행 중 오류가 발생했습니다.",
+          exitCode: 1,
+        },
+      ]);
     }
 
     // 터미널 스크롤을 맨 아래로
@@ -222,59 +211,20 @@ export default function RoomPage() {
 
   // 파일 확장자 가져오기
   const getFileExtension = (lang: string) => {
-    switch (lang) {
-      case "javascript":
-        return "js";
-      case "python":
-        return "py";
-      case "java":
-        return "java";
-      case "cpp":
-        return "cpp";
-      case "bash":
-        return "sh";
-      default:
-        return "js";
-    }
-  };
-
-  // 설치 및 실행 명령어 가져오기
-  const getInstallAndRunCommand = (lang: string, filename: string) => {
-    switch (lang) {
-      case "javascript":
-        return `apt-get install -y nodejs && node ${filename}`;
-      // return `npm install -g node && node ${filename}`;
-      case "python":
-        return `apt-get install -y python3 && python3 ${filename}`;
-      case "java":
-        return `apt-get install -y openjdk-17-jdk && javac ${filename} && java Main`;
-      // return `javac ${filename} && java Main`;
-      case "cpp":
-        return `apt-get install -y g++ && g++ -o main ${filename} && ./main`;
-      // return `g++ -o main ${filename} && ./main`;
-      case "bash":
-        return `chmod +x ${filename} && ./${filename}`;
-      default:
-        return `node ${filename}`;
-    }
-  };
-
-  // 실행 명령어 가져오기
-  const getRunCommand = (lang: string, filename: string) => {
-    switch (lang) {
-      case "javascript":
-        return `node ${filename}`;
-      case "python":
-        return `python3 ${filename}`;
-      case "java":
-        return `java Main`;
-      case "cpp":
-        return `./main`;
-      case "bash":
-        return `./${filename}`;
-      default:
-        return `node ${filename}`;
-    }
+    const extensions: Record<string, string> = {
+      python: "py",
+      javascript: "js", 
+      nodejs: "js",
+      typescript: "ts",
+      java: "java",
+      cpp: "cpp",
+      c: "c",
+      go: "go",
+      rust: "rs",
+      bash: "sh",
+      shell: "sh"
+    };
+    return extensions[lang] || "txt";
   };
 
   // 데이터 로드
@@ -322,11 +272,31 @@ export default function RoomPage() {
           }
         };
 
+        const loadSupportedLanguages = async () => {
+          try {
+            const response = await terminalAPI.getSupportedLanguages();
+            if (response.success && response.data) {
+              setSupportedLanguages(response.data);
+              // 첫 번째 언어를 기본값으로 설정 (python이 있으면 python, 없으면 첫 번째)
+              if (response.data.includes('python')) {
+                setLanguage('python');
+              } else if (response.data.length > 0) {
+                setLanguage(response.data[0]);
+              }
+            }
+          } catch (error) {
+            console.error("지원 언어 목록 로드 실패:", error);
+            // 기본 언어 목록 사용
+            setSupportedLanguages(['bash', 'python', 'javascript', 'java', 'cpp']);
+          }
+        };
+
         await Promise.all([
           loadRoom(),
           loadParticipants(),
           loadSubmissions(),
           loadChatMessages(),
+          loadSupportedLanguages(),
         ]);
       } catch (error) {
         console.error("데이터 로드 실패:", error);
@@ -465,11 +435,11 @@ export default function RoomPage() {
                   onChange={(e) => setLanguage(e.target.value)}
                   className="border border-gray-300 rounded-md px-3 py-1 text-sm"
                 >
-                  <option value="javascript">JavaScript</option>
-                  <option value="python">Python</option>
-                  <option value="java">Java</option>
-                  <option value="cpp">C++</option>
-                  <option value="bash">Bash</option>
+                  {supportedLanguages.map((lang) => (
+                    <option key={lang} value={lang}>
+                      {lang.charAt(0).toUpperCase() + lang.slice(1)}
+                    </option>
+                  ))}
                 </select>
               </div>
               {/* 사이드바 토글 버튼 */}
@@ -538,7 +508,7 @@ export default function RoomPage() {
                   ) : (
                     <>
                       <button
-                        onClick={saveAndRunCode}
+                        onClick={runCode}
                         disabled={!code.trim()}
                         className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-3 py-1 rounded text-xs font-medium flex items-center space-x-1"
                       >
