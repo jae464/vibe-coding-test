@@ -62,6 +62,9 @@ export default function RoomPage() {
   const [newMessage, setNewMessage] = useState("");
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingSubmissions, setPendingSubmissions] = useState<Set<number>>(
+    new Set()
+  );
   const [terminalSession, setTerminalSession] =
     useState<TerminalSession | null>(null);
   const [terminalCommands, setTerminalCommands] = useState<TerminalCommand[]>(
@@ -95,6 +98,27 @@ export default function RoomPage() {
     onSubmissionResult: (result: any) => {
       console.log("제출 결과:", result);
       // 제출 결과 처리
+      if (result.submissionId) {
+        setSubmissions((prev) =>
+          prev.map((submission) =>
+            submission.id === result.submissionId
+              ? {
+                  ...submission,
+                  status: result.status,
+                  executionTime: result.executionTime,
+                  memoryUsed: result.memoryUsed,
+                  resultMessage: result.resultMessage,
+                }
+              : submission
+          )
+        );
+        // Pending 상태에서 제거
+        setPendingSubmissions((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(result.submissionId);
+          return newSet;
+        });
+      }
     },
   });
 
@@ -349,8 +373,31 @@ export default function RoomPage() {
       });
 
       if (response.success && response.data) {
-        setSubmissions([response.data, ...submissions]);
-        console.log("제출 성공:", response.data);
+        const newSubmission = response.data;
+        setSubmissions([newSubmission, ...submissions]);
+        setPendingSubmissions(
+          (prev) => new Set(Array.from(prev).concat(newSubmission.id))
+        );
+        console.log("제출 성공:", newSubmission);
+
+        // 채점 요청
+        try {
+          const judgeResponse = await fetch(
+            `/api/judge/submission/${newSubmission.id}`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (!judgeResponse.ok) {
+            console.error("채점 요청 실패");
+          }
+        } catch (error) {
+          console.error("채점 요청 중 오류:", error);
+        }
       }
     } catch (error) {
       console.error("제출 실패:", error);
@@ -740,41 +787,92 @@ export default function RoomPage() {
 
                   {activeTab === "submissions" && (
                     <div className="space-y-3">
-                      {submissions.map((submission) => (
-                        <div
-                          key={submission.id}
-                          className="border border-gray-200 rounded-lg p-3"
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-gray-900">
-                              제출 #{String(submission.id).slice(0, 8)}
-                            </span>
-                            <div className="flex items-center space-x-1">
-                              {submission.status === "ACCEPTED" ? (
-                                <CheckCircle className="h-4 w-4 text-green-500" />
-                              ) : submission.status === "WRONG_ANSWER" ? (
-                                <XCircle className="h-4 w-4 text-red-500" />
-                              ) : (
-                                <Clock className="h-4 w-4 text-yellow-500" />
-                              )}
-                              <span
-                                className={`text-xs font-medium ${
-                                  submission.status === "ACCEPTED"
-                                    ? "text-green-600"
-                                    : submission.status === "WRONG_ANSWER"
-                                    ? "text-red-600"
-                                    : "text-yellow-600"
-                                }`}
-                              >
-                                {submission.status}
+                      {submissions.map((submission) => {
+                        const isPending = pendingSubmissions.has(submission.id);
+                        return (
+                          <div
+                            key={submission.id}
+                            className={`border rounded-lg p-3 ${
+                              isPending
+                                ? "border-blue-200 bg-blue-50"
+                                : "border-gray-200"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-gray-900">
+                                제출 #{String(submission.id).slice(0, 8)}
                               </span>
+                              <div className="flex items-center space-x-1">
+                                {isPending ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                                    <span className="text-xs font-medium text-blue-600">
+                                      채점 중...
+                                    </span>
+                                  </>
+                                ) : submission.status === "ACCEPTED" ? (
+                                  <>
+                                    <CheckCircle className="h-4 w-4 text-green-500" />
+                                    <span className="text-xs font-medium text-green-600">
+                                      {submission.status}
+                                    </span>
+                                  </>
+                                ) : submission.status === "WRONG_ANSWER" ? (
+                                  <>
+                                    <XCircle className="h-4 w-4 text-red-500" />
+                                    <span className="text-xs font-medium text-red-600">
+                                      {submission.status}
+                                    </span>
+                                  </>
+                                ) : submission.status ===
+                                  "TIME_LIMIT_EXCEEDED" ? (
+                                  <>
+                                    <Clock className="h-4 w-4 text-orange-500" />
+                                    <span className="text-xs font-medium text-orange-600">
+                                      시간 초과
+                                    </span>
+                                  </>
+                                ) : submission.status ===
+                                  "MEMORY_LIMIT_EXCEEDED" ? (
+                                  <>
+                                    <Clock className="h-4 w-4 text-orange-500" />
+                                    <span className="text-xs font-medium text-orange-600">
+                                      메모리 초과
+                                    </span>
+                                  </>
+                                ) : submission.status === "RUNTIME_ERROR" ? (
+                                  <>
+                                    <XCircle className="h-4 w-4 text-red-500" />
+                                    <span className="text-xs font-medium text-red-600">
+                                      런타임 오류
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Clock className="h-4 w-4 text-yellow-500" />
+                                    <span className="text-xs font-medium text-yellow-600">
+                                      {submission.status}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
                             </div>
+                            <div className="text-xs text-gray-500">
+                              {new Date(submission.createdAt).toLocaleString()}
+                            </div>
+                            {submission.executionTime && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                실행 시간: {submission.executionTime}ms
+                              </div>
+                            )}
+                            {submission.memoryUsed && (
+                              <div className="text-xs text-gray-500">
+                                메모리 사용량: {submission.memoryUsed}MB
+                              </div>
+                            )}
                           </div>
-                          <div className="text-xs text-gray-500">
-                            {new Date(submission.createdAt).toLocaleString()}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                       {submissions.length === 0 && (
                         <div className="text-center text-gray-500 py-8">
                           <Zap className="h-8 w-8 mx-auto mb-2 text-gray-300" />
