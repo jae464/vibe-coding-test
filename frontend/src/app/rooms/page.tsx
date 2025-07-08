@@ -48,14 +48,21 @@ export default function RoomsPage() {
       transports: ["websocket"],
     });
 
+    // 연결 성공 시
+    socketRef.current.on("connect", () => {
+      console.log("방 목록 WebSocket 연결됨");
+    });
+
     // 방 업데이트 이벤트 리스너
     const handleRoomUpdate = (data: any) => {
       console.log("방 업데이트 수신:", data);
       // 방 목록을 새로고침하여 최신 상태를 반영
       const refreshRooms = async () => {
         try {
+          console.log("방 목록 새로고침 시작");
           const roomsResponse = await roomsAPI.getAll();
           if (roomsResponse.success && roomsResponse.data) {
+            console.log("새로운 방 목록:", roomsResponse.data);
             setRooms(roomsResponse.data);
           }
         } catch (error) {

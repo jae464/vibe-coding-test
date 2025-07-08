@@ -1,25 +1,72 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { Contest, Problem, Room } from "@/types";
-import { contestsAPI, problemsAPI, roomsAPI } from "@/lib/api";
+import { useState, useEffect, useRef } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
+import { roomsAPI, contestsAPI, problemsAPI } from "@/lib/api";
+import { Contest, Room, Problem } from "@/types";
 import Navigation from "@/components/layout/Navigation";
+import { io, Socket } from "socket.io-client";
 
 export default function ContestDetailPage() {
   const [contest, setContest] = useState<Contest | null>(null);
-  const [problems, setProblems] = useState<Problem[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [problems, setProblems] = useState<Problem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "problems" | "rooms">(
     "overview"
   );
+
   const router = useRouter();
   const params = useParams();
-  const { token } = useAuthStore();
+  const { token, user } = useAuthStore();
   const contestId = params.id as string;
+  const socketRef = useRef<Socket | null>(null);
+
+  // WebSocket 연결 및 이벤트 리스너
+  useEffect(() => {
+    if (!token) return;
+
+    // WebSocket 연결
+    socketRef.current = io("http://localhost:3001/rooms", {
+      auth: { token },
+      transports: ["websocket"],
+    });
+
+    // 연결 성공 시
+    socketRef.current.on("connect", () => {
+      console.log("대회 상세 WebSocket 연결됨");
+    });
+
+    // 방 업데이트 이벤트 리스너
+    const handleRoomUpdate = (data: any) => {
+      console.log("대회 상세 방 업데이트 수신:", data);
+      // 방 목록을 새로고침하여 최신 상태를 반영
+      const refreshRooms = async () => {
+        try {
+          const roomsResponse = await roomsAPI.getAll(1, 10, contestId);
+          if (roomsResponse.success && roomsResponse.data) {
+            setRooms(roomsResponse.data);
+          }
+        } catch (error) {
+          console.error("방 목록 새로고침 실패:", error);
+        }
+      };
+      refreshRooms();
+    };
+
+    socketRef.current.on("room_updated", handleRoomUpdate);
+    socketRef.current.on("room_list_updated", handleRoomUpdate);
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off("room_updated", handleRoomUpdate);
+        socketRef.current.off("room_list_updated", handleRoomUpdate);
+        socketRef.current.disconnect();
+      }
+    };
+  }, [token, contestId]);
 
   useEffect(() => {
     if (!token) {
@@ -77,8 +124,22 @@ export default function ContestDetailPage() {
     router.push(`/problems/${problemId}`);
   };
 
-  const handleRoomClick = (roomId: number) => {
-    router.push(`/rooms/${roomId}`);
+  const handleRoomClick = async (roomId: number) => {
+    try {
+      // 방에 참가
+      await roomsAPI.join(roomId.toString(), user?.id || 0);
+      router.push(`/rooms/${roomId}`);
+    } catch (error: any) {
+      console.error("방 참가 실패:", error);
+
+      // 이미 참가 중인 경우 방으로 바로 이동
+      if (error.response?.status === 409) {
+        router.push(`/rooms/${roomId}`);
+        return;
+      }
+
+      alert("방 참가에 실패했습니다.");
+    }
   };
 
   const formatDate = (dateString: string) => {

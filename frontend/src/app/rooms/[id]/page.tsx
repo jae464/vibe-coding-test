@@ -87,7 +87,7 @@ export default function RoomPage() {
   const terminalRef = useRef<HTMLDivElement>(null);
 
   // WebSocket 연결
-  const { connected, emit, sendCodeChange } = useSocket({
+  const { connected, emit, sendCodeChange, leaveRoom } = useSocket({
     roomId,
     onCodeChange: (newCode: string) => {
       setCode(newCode);
@@ -120,7 +120,41 @@ export default function RoomPage() {
         });
       }
     },
+    onRoomParticipants: (participants: any[]) => {
+      console.log(participants);
+      setParticipants(participants);
+    },
   });
+
+  // 페이지 벗어날 때 방 나가기
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (user?.id) {
+        // 페이지를 벗어날 때 방에서 나가기
+        roomsAPI.leave(roomId, user.id).catch(console.error);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden" && user?.id) {
+        // 페이지가 숨겨질 때 방에서 나가기
+        roomsAPI.leave(roomId, user.id).catch(console.error);
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+
+      // 컴포넌트 언마운트 시 방에서 나가기
+      if (user?.id) {
+        roomsAPI.leave(roomId, user.id).catch(console.error);
+      }
+    };
+  }, [user?.id, roomId]);
 
   // 터미널 세션 생성
   const createTerminalSession = async () => {
@@ -275,12 +309,12 @@ export default function RoomPage() {
           }
         };
 
-        const loadParticipants = async () => {
-          const response = await roomsAPI.getParticipants(roomId);
-          if (response.success && response.data) {
-            setParticipants(response.data);
-          }
-        };
+        // const loadParticipants = async () => {
+        //   const response = await roomsAPI.getParticipants(roomId);
+        //   if (response.success && response.data) {
+        //     setParticipants(response.data);
+        //   }
+        // };
 
         const loadSubmissions = async () => {
           const response = await submissionsAPI.getByRoom(roomId);

@@ -93,6 +93,10 @@ export class RoomsService {
   }
 
   async joinRoom(joinRoomDto: JoinRoomDto): Promise<RoomUser> {
+    console.log(
+      `[RoomsService] 방 참가 시도: roomId=${joinRoomDto.roomId}, userId=${joinRoomDto.userId}`
+    );
+
     // 이미 참가 중인지 확인
     const existingMember = await this.roomUsersRepository.findOne({
       where: {
@@ -102,14 +106,21 @@ export class RoomsService {
     });
 
     if (existingMember) {
+      console.log(
+        `[RoomsService] 이미 참가 중: roomId=${joinRoomDto.roomId}, userId=${joinRoomDto.userId}`
+      );
       throw new ConflictException("이미 참가 중인 방입니다.");
     }
 
     const roomUser = this.roomUsersRepository.create(joinRoomDto);
     const savedRoomUser = await this.roomUsersRepository.save(roomUser);
+    console.log(
+      `[RoomsService] 방 참가 성공: roomId=${joinRoomDto.roomId}, userId=${joinRoomDto.userId}`
+    );
 
     // 방 정보를 가져와서 참가자 수 업데이트를 브로드캐스트
     const room = await this.findOne(joinRoomDto.roomId);
+    console.log(`[RoomsService] 방 참가자 수: ${room.roomUsers?.length || 0}`);
     await this.roomGateway.broadcastRoomUpdate(joinRoomDto.roomId, {
       roomId: joinRoomDto.roomId,
       participantCount: room.roomUsers?.length || 0,
@@ -120,6 +131,10 @@ export class RoomsService {
   }
 
   async leaveRoom(roomId: number, userId: number): Promise<void> {
+    console.log(
+      `[RoomsService] 방 퇴장 시도: roomId=${roomId}, userId=${userId}`
+    );
+
     const roomUser = await this.roomUsersRepository.findOne({
       where: {
         roomId,
@@ -128,13 +143,20 @@ export class RoomsService {
     });
 
     if (!roomUser) {
+      console.log(
+        `[RoomsService] 참가 중인 방이 아님: roomId=${roomId}, userId=${userId}`
+      );
       throw new NotFoundException("참가 중인 방이 아닙니다.");
     }
 
     await this.roomUsersRepository.remove(roomUser);
+    console.log(
+      `[RoomsService] 방 퇴장 성공: roomId=${roomId}, userId=${userId}`
+    );
 
     // 방 정보를 가져와서 참가자 수 업데이트를 브로드캐스트
     const room = await this.findOne(roomId);
+    console.log(`[RoomsService] 방 참가자 수: ${room.roomUsers?.length || 0}`);
     await this.roomGateway.broadcastRoomUpdate(roomId, {
       roomId: roomId,
       participantCount: room.roomUsers?.length || 0,
