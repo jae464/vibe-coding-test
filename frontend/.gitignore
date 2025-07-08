@@ -154,3 +154,5 @@ yarn-error.log*
 
 # Turbo
 .turbo 
+
+.cursorrules
