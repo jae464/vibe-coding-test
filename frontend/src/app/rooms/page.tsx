@@ -31,6 +31,7 @@ export default function RoomsPage() {
     problemId: "",
     maxParticipants: 10,
   });
+  const [joiningRooms, setJoiningRooms] = useState<Set<number>>(new Set());
 
   const router = useRouter();
   const { user, token } = useAuthStore();
@@ -111,14 +112,38 @@ export default function RoomsPage() {
 
   // 방 참가
   const handleJoinRoom = async (roomId: number) => {
+    // 이미 참가 중인지 확인
+    const isAlreadyJoined = rooms
+      .find((room) => room.id === roomId)
+      ?.participants?.some((participant) => participant.userId === user?.id);
+
+    if (isAlreadyJoined) {
+      router.push(`/rooms/${roomId}`);
+      return;
+    }
+
     try {
+      setJoiningRooms((prev) => new Set(Array.from(prev).concat(roomId)));
       const response = await roomsAPI.join(roomId.toString(), user?.id || 0);
       if (response.success) {
         router.push(`/rooms/${roomId}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("방 참가 실패:", error);
+
+      // 이미 참가 중인 경우 방으로 바로 이동
+      if (error.response?.status === 409) {
+        router.push(`/rooms/${roomId}`);
+        return;
+      }
+
       alert("방 참가에 실패했습니다.");
+    } finally {
+      setJoiningRooms((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(roomId);
+        return newSet;
+      });
     }
   };
 
@@ -241,13 +266,48 @@ export default function RoomsPage() {
                       최대 {room.maxParticipants}명
                     </span>
                   </div>
-                  <button
-                    onClick={() => handleJoinRoom(room.id)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 text-sm"
-                  >
-                    <span>참가</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
+                  {(() => {
+                    const isAlreadyJoined = room.participants?.some(
+                      (participant) => participant.userId === user?.id
+                    );
+                    const isJoining = joiningRooms.has(room.id);
+
+                    if (isAlreadyJoined) {
+                      return (
+                        <button
+                          onClick={() => router.push(`/rooms/${room.id}`)}
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 text-sm"
+                        >
+                          <span>참가 중</span>
+                          <ArrowRight className="h-4 w-4" />
+                        </button>
+                      );
+                    }
+
+                    return (
+                      <button
+                        onClick={() => handleJoinRoom(room.id)}
+                        disabled={isJoining}
+                        className={`px-4 py-2 rounded-lg flex items-center space-x-2 text-sm ${
+                          isJoining
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-blue-600 hover:bg-blue-700 text-white"
+                        }`}
+                      >
+                        {isJoining ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>참가 중...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>참가</span>
+                            <ArrowRight className="h-4 w-4" />
+                          </>
+                        )}
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
