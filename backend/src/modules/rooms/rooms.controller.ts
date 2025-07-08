@@ -50,8 +50,15 @@ export class RoomsController {
     );
   }
 
-  @Post("join")
-  async joinRoom(@Body() joinRoomDto: JoinRoomDto) {
+  @Post(":roomId/join")
+  async joinRoom(
+    @Param("roomId") roomId: string,
+    @Body("userId") userId: number
+  ) {
+    const joinRoomDto: JoinRoomDto = {
+      roomId: +roomId,
+      userId: userId,
+    };
     const roomUser = await this.roomsService.joinRoom(joinRoomDto);
     return ApiResponseDto.success(roomUser, "방에 성공적으로 참가했습니다.");
   }

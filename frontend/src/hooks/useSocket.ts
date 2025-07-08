@@ -44,7 +44,7 @@ export const useSocket = (options: UseSocketOptions = {}) => {
       // 방 참가
       if (options.roomId && user?.id) {
         socketRef.current?.emit("join_room", {
-          roomId: options.roomId,
+          roomId: parseInt(options.roomId, 10),
           userId: user.id,
           username: user.username,
         });
@@ -124,7 +124,7 @@ export const useSocket = (options: UseSocketOptions = {}) => {
       if (options.roomId && user?.id) {
         const clientId = socketRef.current?.id || Date.now().toString();
         emit("code_change", {
-          roomId: options.roomId,
+          roomId: parseInt(options.roomId, 10),
           code,
           editorId: user.id,
           editorName: user.username,
@@ -139,7 +139,7 @@ export const useSocket = (options: UseSocketOptions = {}) => {
     (message: string) => {
       if (options.roomId && user?.id) {
         emit("chat_message", {
-          roomId: options.roomId,
+          roomId: parseInt(options.roomId, 10),
           userId: user.id,
           username: user.username,
           message,
@@ -152,7 +152,7 @@ export const useSocket = (options: UseSocketOptions = {}) => {
   const leaveRoom = useCallback(() => {
     if (options.roomId && user?.id) {
       emit("leave_room", {
-        roomId: options.roomId,
+        roomId: parseInt(options.roomId, 10),
         userId: user.id,
         username: user.username,
       });

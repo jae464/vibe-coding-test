@@ -1,6 +1,6 @@
 // 사용자 관련 타입
 export interface User {
-  id: string;
+  id: number;
   username: string;
   email: string;
   createdAt: string;
@@ -9,7 +9,7 @@ export interface User {
 
 // 대회 관련 타입
 export interface Contest {
-  id: string;
+  id: number;
   title: string;
   description: string;
   startTime: string;
@@ -21,7 +21,7 @@ export interface Contest {
 
 // 문제 관련 타입
 export interface Problem {
-  id: string;
+  id: number;
   title: string;
   description: string;
   difficulty: "EASY" | "MEDIUM" | "HARD";
@@ -34,10 +34,10 @@ export interface Problem {
 
 // 방 관련 타입
 export interface Room {
-  id: string;
+  id: number;
   name: string;
-  contestId: string;
-  problemId: string;
+  contestId: number;
+  problemId: number;
   maxParticipants: number;
   isActive: boolean;
   createdAt: string;
@@ -49,19 +49,19 @@ export interface Room {
 
 // 방 참가자 타입
 export interface RoomUser {
-  id: string;
-  roomId: string;
-  userId: string;
+  id: number;
+  roomId: number;
+  userId: number;
   joinedAt: string;
   user?: User;
 }
 
 // 제출 관련 타입
 export interface Submission {
-  id: string;
-  roomId: string;
-  userId: string;
-  problemId: string;
+  id: number;
+  roomId: number;
+  userId: number;
+  problemId: number;
   code: string;
   language: string;
   status:
@@ -100,9 +100,9 @@ export interface TestCaseResult {
 
 // 채팅 메시지 타입
 export interface ChatMessage {
-  id: string;
-  roomId: string;
-  userId: string;
+  id: number;
+  roomId: number;
+  userId: number;
   message: string;
   createdAt: string;
   user?: User;

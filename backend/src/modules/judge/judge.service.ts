@@ -1,24 +1,24 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Submission, SubmissionStatus } from '../../entities/Submission';
-import { Problem } from '../../entities/Problem';
-import { Testcase } from '../../entities/Testcase';
-import { JudgeRequestDto } from './dto/judge-request.dto';
-import { JudgeResultDto, JudgeStatus } from './dto/judge-result.dto';
-import { RoomsService } from '../rooms/rooms.service';
-import { exec, spawn } from 'child_process';
-import { promisify } from 'util';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as crypto from 'crypto';
+import { Injectable, Logger } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Submission, SubmissionStatus } from "../../entities/Submission";
+import { Problem } from "../../entities/Problem";
+import { Testcase } from "../../entities/Testcase";
+import { JudgeRequestDto } from "./dto/judge-request.dto";
+import { JudgeResultDto, JudgeStatus } from "./dto/judge-result.dto";
+import { RoomsService } from "../rooms/rooms.service";
+import { exec, spawn } from "child_process";
+import { promisify } from "util";
+import * as fs from "fs";
+import * as path from "path";
+import * as crypto from "crypto";
 
 const execAsync = promisify(exec);
 
 @Injectable()
 export class JudgeService {
   private readonly logger = new Logger(JudgeService.name);
-  private readonly tempDir = path.join(process.cwd(), 'temp');
+  private readonly tempDir = path.join(process.cwd(), "temp");
 
   constructor(
     @InjectRepository(Submission)
@@ -27,7 +27,7 @@ export class JudgeService {
     private problemsRepository: Repository<Problem>,
     @InjectRepository(Testcase)
     private testcasesRepository: Repository<Testcase>,
-    private roomsService: RoomsService,
+    private roomsService: RoomsService
   ) {
     // 임시 디렉토리 생성
     if (!fs.existsSync(this.tempDir)) {
@@ -40,21 +40,21 @@ export class JudgeService {
       // 제출 정보 조회
       const submission = await this.submissionsRepository.findOne({
         where: { id: submissionId },
-        relations: ['problem', 'room'],
+        relations: ["problem", "room"],
       });
 
       if (!submission) {
-        throw new Error('제출을 찾을 수 없습니다.');
+        throw new Error("제출을 찾을 수 없습니다.");
       }
 
       // 문제 정보 조회
       const problem = await this.problemsRepository.findOne({
         where: { id: submission.problemId },
-        relations: ['testcases'],
+        relations: ["testcases"],
       });
 
       if (!problem) {
-        throw new Error('문제를 찾을 수 없습니다.');
+        throw new Error("문제를 찾을 수 없습니다.");
       }
 
       // 테스트케이스 조회
@@ -68,7 +68,7 @@ export class JudgeService {
         language: submission.language,
         problemId: problem.id,
         submissionId: submission.id,
-        testcases: testcases.map(tc => ({
+        testcases: testcases.map((tc) => ({
           input: tc.input,
           output: tc.output,
           isSample: tc.isSample,
@@ -90,14 +90,14 @@ export class JudgeService {
           submission.id,
           problem.id,
           result.status,
-          this.formatResultMessage(result),
+          this.formatResultMessage(result)
         );
       }
 
       return result;
     } catch (error) {
       this.logger.error(`채점 중 오류 발생: ${error.message}`, error.stack);
-      
+
       const errorResult: JudgeResultDto = {
         submissionId,
         status: JudgeStatus.SYSTEM_ERROR,
@@ -113,13 +113,18 @@ export class JudgeService {
     }
   }
 
-  private async executeJudge(request: JudgeRequestDto): Promise<JudgeResultDto> {
+  private async executeJudge(
+    request: JudgeRequestDto
+  ): Promise<JudgeResultDto> {
     const { code, language, testcases, timeLimit, memoryLimit } = request;
-    
+
     // 임시 파일 생성
-    const fileId = crypto.randomBytes(8).toString('hex');
-    const filePath = path.join(this.tempDir, `${fileId}.${this.getFileExtension(language)}`);
-    
+    const fileId = crypto.randomBytes(8).toString("hex");
+    const filePath = path.join(
+      this.tempDir,
+      `${fileId}.${this.getFileExtension(language)}`
+    );
+
     try {
       // 코드 파일 생성
       fs.writeFileSync(filePath, code);
@@ -139,7 +144,7 @@ export class JudgeService {
           testcase.output,
           timeLimit,
           memoryLimit,
-          i,
+          i
         );
 
         testcaseResults.push(result);
@@ -155,7 +160,11 @@ export class JudgeService {
       }
 
       // 최종 상태 결정
-      const status = this.determineFinalStatus(testcaseResults, passedTestcases, testcases.length);
+      const status = this.determineFinalStatus(
+        testcaseResults,
+        passedTestcases,
+        testcases.length
+      );
 
       return {
         submissionId: request.submissionId,
@@ -179,33 +188,33 @@ export class JudgeService {
     expectedOutput: string,
     timeLimit: number,
     memoryLimit: number,
-    testcaseId: number,
+    testcaseId: number
   ): Promise<any> {
     const startTime = Date.now();
-    
+
     return new Promise((resolve) => {
       try {
         // 언어별 실행 명령어 생성
         const command = this.buildExecutionCommand(filePath, language);
-        const [cmd, ...args] = command.split(' ');
-        
+        const [cmd, ...args] = command.split(" ");
+
         // 실행
         const process = spawn(cmd, args, {
           timeout: timeLimit * 1000, // 초를 밀리초로 변환
         });
 
-        let stdout = '';
-        let stderr = '';
+        let stdout = "";
+        let stderr = "";
 
-        process.stdout.on('data', (data) => {
+        process.stdout.on("data", (data) => {
           stdout += data.toString();
         });
 
-        process.stderr.on('data', (data) => {
+        process.stderr.on("data", (data) => {
           stderr += data.toString();
         });
 
-        process.on('close', (code) => {
+        process.on("close", (code) => {
           const executionTime = Date.now() - startTime;
           const actualOutput = stdout.trim();
           const isCorrect = this.compareOutput(actualOutput, expectedOutput);
@@ -222,12 +231,12 @@ export class JudgeService {
           });
         });
 
-        process.on('error', (error) => {
+        process.on("error", (error) => {
           resolve({
             testcaseId,
             input,
             expectedOutput,
-            actualOutput: '',
+            actualOutput: "",
             isCorrect: false,
             executionTime: 0,
             memoryUsed: 0,
@@ -238,13 +247,12 @@ export class JudgeService {
         // 입력 전송
         process.stdin.write(input);
         process.stdin.end();
-
       } catch (error) {
         resolve({
           testcaseId,
           input,
           expectedOutput,
-          actualOutput: '',
+          actualOutput: "",
           isCorrect: false,
           executionTime: 0,
           memoryUsed: 0,
@@ -256,18 +264,18 @@ export class JudgeService {
 
   private buildExecutionCommand(filePath: string, language: string): string {
     switch (language.toLowerCase()) {
-      case 'javascript':
-      case 'js':
+      case "javascript":
+      case "js":
         return `node ${filePath}`;
-      case 'python':
-      case 'py':
+      case "python":
+      case "py":
         return `python3 ${filePath}`;
-      case 'java':
+      case "java":
         return `java ${filePath}`;
-      case 'cpp':
-      case 'c++':
+      case "cpp":
+      case "c++":
         return `g++ ${filePath} -o ${filePath}.out && ${filePath}.out`;
-      case 'c':
+      case "c":
         return `gcc ${filePath} -o ${filePath}.out && ${filePath}.out`;
       default:
         throw new Error(`지원하지 않는 언어입니다: ${language}`);
@@ -276,46 +284,47 @@ export class JudgeService {
 
   private getFileExtension(language: string): string {
     switch (language.toLowerCase()) {
-      case 'javascript':
-      case 'js':
-        return 'js';
-      case 'python':
-      case 'py':
-        return 'py';
-      case 'java':
-        return 'java';
-      case 'cpp':
-      case 'c++':
-        return 'cpp';
-      case 'c':
-        return 'c';
+      case "javascript":
+      case "js":
+        return "js";
+      case "python":
+      case "py":
+        return "py";
+      case "java":
+        return "java";
+      case "cpp":
+      case "c++":
+        return "cpp";
+      case "c":
+        return "c";
       default:
-        return 'txt';
+        return "txt";
     }
   }
 
   private compareOutput(actual: string, expected: string): boolean {
     // 공백과 줄바꿈 정규화 후 비교
-    const normalize = (str: string) => str.trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const normalize = (str: string) =>
+      str.trim().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
     return normalize(actual) === normalize(expected);
   }
 
   private determineFinalStatus(
     testcaseResults: any[],
     passedTestcases: number,
-    totalTestcases: number,
+    totalTestcases: number
   ): JudgeStatus {
     if (passedTestcases === totalTestcases) {
       return JudgeStatus.ACCEPTED;
     }
 
     // 첫 번째 실패한 테스트케이스의 에러 타입 확인
-    const firstFailure = testcaseResults.find(result => !result.isCorrect);
+    const firstFailure = testcaseResults.find((result) => !result.isCorrect);
     if (firstFailure?.errorMessage) {
-      if (firstFailure.errorMessage.includes('timeout')) {
+      if (firstFailure.errorMessage.includes("timeout")) {
         return JudgeStatus.TIME_LIMIT_EXCEEDED;
       }
-      if (firstFailure.errorMessage.includes('memory')) {
+      if (firstFailure.errorMessage.includes("memory")) {
         return JudgeStatus.MEMORY_LIMIT_EXCEEDED;
       }
       return JudgeStatus.RUNTIME_ERROR;
@@ -324,9 +333,12 @@ export class JudgeService {
     return JudgeStatus.WRONG_ANSWER;
   }
 
-  private async saveJudgeResult(submission: Submission, result: JudgeResultDto): Promise<void> {
+  private async saveJudgeResult(
+    submission: Submission,
+    result: JudgeResultDto
+  ): Promise<void> {
     const status = this.mapJudgeStatusToSubmissionStatus(result.status);
-    
+
     await this.submissionsRepository.update(submission.id, {
       status,
       resultMessage: this.formatResultMessage(result),
@@ -335,7 +347,9 @@ export class JudgeService {
     });
   }
 
-  private mapJudgeStatusToSubmissionStatus(judgeStatus: JudgeStatus): SubmissionStatus {
+  private mapJudgeStatusToSubmissionStatus(
+    judgeStatus: JudgeStatus
+  ): SubmissionStatus {
     switch (judgeStatus) {
       case JudgeStatus.ACCEPTED:
         return SubmissionStatus.ACCEPTED;
@@ -367,7 +381,7 @@ export class JudgeService {
       return `시스템 오류: ${result.systemError}`;
     }
 
-    const firstFailure = result.testcaseResults.find(r => !r.isCorrect);
+    const firstFailure = result.testcaseResults.find((r) => !r.isCorrect);
     if (firstFailure) {
       return `오답입니다. (${result.passedTestcases}/${result.totalTestcases} 테스트케이스 통과)\n입력: ${firstFailure.input}\n기대 출력: ${firstFailure.expectedOutput}\n실제 출력: ${firstFailure.actualOutput}`;
     }
@@ -389,4 +403,4 @@ export class JudgeService {
       this.logger.warn(`임시 파일 정리 실패: ${filePath}`, error);
     }
   }
-} 
+}

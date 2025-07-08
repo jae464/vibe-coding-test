@@ -62,15 +62,19 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const { roomId, userId, username } = data;
 
+    // roomId를 숫자로 변환
+    const numericRoomId =
+      typeof roomId === "string" ? parseInt(roomId, 10) : roomId;
+
     // 클라이언트를 방에 참가시킴
-    await client.join(`room_${roomId}`);
-    console.log(`[WebSocket] Client ${client.id} joined room_${roomId}`);
+    await client.join(`room_${numericRoomId}`);
+    console.log(`[WebSocket] Client ${client.id} joined room_${numericRoomId}`);
 
     // 연결된 사용자 정보 저장
     this.connectedUsers.set(client.id, {
       userId,
       username,
-      roomId,
+      roomId: numericRoomId,
       clientId: client.id,
     });
     console.log(
@@ -79,12 +83,12 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
 
     // 방의 모든 사용자에게 참가 알림 (자신 포함)
-    this.server.to(`room_${roomId}`).emit("user_joined", {
+    this.server.to(`room_${numericRoomId}`).emit("user_joined", {
       userId,
       username,
       timestamp: new Date(),
     });
-    console.log(`[WebSocket] Emitted user_joined to room_${roomId}`);
+    console.log(`[WebSocket] Emitted user_joined to room_${numericRoomId}`);
 
     // 새로 참가한 사용자에게 현재 방의 모든 참가자 정보 전송
     console.log(
@@ -93,21 +97,23 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
 
     // 현재 방의 모든 소켓 클라이언트 확인
-    const roomSockets = await this.server.in(`room_${roomId}`).fetchSockets();
+    const roomSockets = await this.server
+      .in(`room_${numericRoomId}`)
+      .fetchSockets();
     console.log(
-      `[WebSocket] Room ${roomId} sockets:`,
+      `[WebSocket] Room ${numericRoomId} sockets:`,
       roomSockets.map((s) => s.id)
     );
 
     client.emit("room_participants", {
       participants: Array.from(this.connectedUsers.values()).filter(
-        (user) => user.roomId === roomId
+        (user) => user.roomId === numericRoomId
       ),
       timestamp: new Date(),
     });
 
     // 현재 방의 코드 상태 전송
-    const currentCode = this.roomCodeStates.get(roomId) || "";
+    const currentCode = this.roomCodeStates.get(numericRoomId) || "";
     client.emit("room_code_state", {
       code: currentCode,
       timestamp: new Date(),
@@ -117,7 +123,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       currentCode.substring(0, 100) + "..."
     );
 
-    console.log(`[WebSocket] User ${username} joined room ${roomId}`);
+    console.log(`[WebSocket] User ${username} joined room ${numericRoomId}`);
   }
 
   @SubscribeMessage("leave_room")
@@ -129,9 +135,13 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const { roomId, userId, username } = data;
 
+    // roomId를 숫자로 변환
+    const numericRoomId =
+      typeof roomId === "string" ? parseInt(roomId, 10) : roomId;
+
     // 클라이언트를 방에서 나가게 함
-    await client.leave(`room_${roomId}`);
-    console.log(`[WebSocket] Client ${client.id} left room_${roomId}`);
+    await client.leave(`room_${numericRoomId}`);
+    console.log(`[WebSocket] Client ${client.id} left room_${numericRoomId}`);
 
     // 연결된 사용자 정보 제거
     this.connectedUsers.delete(client.id);
@@ -141,14 +151,14 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
 
     // 방의 다른 사용자들에게 나가기 알림
-    client.to(`room_${roomId}`).emit("user_left", {
+    client.to(`room_${numericRoomId}`).emit("user_left", {
       userId,
       username,
       timestamp: new Date(),
     });
-    console.log(`[WebSocket] Emitted user_left to room_${roomId}`);
+    console.log(`[WebSocket] Emitted user_left to room_${numericRoomId}`);
 
-    console.log(`[WebSocket] User ${username} left room ${roomId}`);
+    console.log(`[WebSocket] User ${username} left room ${numericRoomId}`);
   }
 
   @SubscribeMessage("code_change")
@@ -160,20 +170,26 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const { roomId, code, editorId, editorName, clientId } = data;
 
+    // roomId를 숫자로 변환
+    const numericRoomId =
+      typeof roomId === "string" ? parseInt(roomId, 10) : roomId;
+
     // 방의 코드 상태 업데이트
-    this.roomCodeStates.set(roomId, code);
+    this.roomCodeStates.set(numericRoomId, code);
 
     // 방의 다른 사용자들에게 코드 변경 알림
-    client.to(`room_${roomId}`).emit("code_updated", {
+    client.to(`room_${numericRoomId}`).emit("code_updated", {
       code,
       editorId,
       editorName,
       clientId: clientId || client.id,
       timestamp: new Date(),
     });
-    console.log(`[WebSocket] Emitted code_updated to room_${roomId}`);
+    console.log(`[WebSocket] Emitted code_updated to room_${numericRoomId}`);
 
-    console.log(`[WebSocket] Code changed in room ${roomId} by ${editorName}`);
+    console.log(
+      `[WebSocket] Code changed in room ${numericRoomId} by ${editorName}`
+    );
   }
 
   @SubscribeMessage("chat_message")
@@ -185,17 +201,21 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const { roomId, userId, username, message } = data;
 
+    // roomId를 숫자로 변환
+    const numericRoomId =
+      typeof roomId === "string" ? parseInt(roomId, 10) : roomId;
+
     // 방의 모든 사용자에게 채팅 메시지 전송
-    this.server.to(`room_${roomId}`).emit("new_message", {
+    this.server.to(`room_${numericRoomId}`).emit("new_message", {
       userId,
       username,
       message,
       timestamp: new Date(),
     });
-    console.log(`[WebSocket] Emitted new_message to room_${roomId}`);
+    console.log(`[WebSocket] Emitted new_message to room_${numericRoomId}`);
 
     console.log(
-      `[WebSocket] Chat message in room ${roomId} from ${username}: ${message}`
+      `[WebSocket] Chat message in room ${numericRoomId} from ${username}: ${message}`
     );
   }
 
@@ -206,8 +226,12 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     const { roomId, submissionId, problemId, status, resultMessage } = data;
 
+    // roomId를 숫자로 변환
+    const numericRoomId =
+      typeof roomId === "string" ? parseInt(roomId, 10) : roomId;
+
     // 방의 모든 사용자에게 제출 결과 전송
-    this.server.to(`room_${roomId}`).emit("submission_updated", {
+    this.server.to(`room_${numericRoomId}`).emit("submission_updated", {
       submissionId,
       problemId,
       status,
@@ -215,7 +239,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       timestamp: new Date(),
     });
 
-    console.log(`Submission result in room ${roomId}: ${status}`);
+    console.log(`Submission result in room ${numericRoomId}: ${status}`);
   }
 
   // 서버에서 직접 이벤트를 보내는 메서드들

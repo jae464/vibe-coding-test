@@ -213,7 +213,7 @@ export default function RoomPage() {
   const getFileExtension = (lang: string) => {
     const extensions: Record<string, string> = {
       python: "py",
-      javascript: "js", 
+      javascript: "js",
       nodejs: "js",
       typescript: "ts",
       java: "java",
@@ -222,7 +222,7 @@ export default function RoomPage() {
       go: "go",
       rust: "rs",
       bash: "sh",
-      shell: "sh"
+      shell: "sh",
     };
     return extensions[lang] || "txt";
   };
@@ -242,7 +242,7 @@ export default function RoomPage() {
             setRoom(response.data);
             if (response.data.problemId) {
               const problemResponse = await problemsAPI.getById(
-                response.data.problemId
+                String(response.data.problemId)
               );
               if (problemResponse.success && problemResponse.data) {
                 setProblem(problemResponse.data);
@@ -278,8 +278,8 @@ export default function RoomPage() {
             if (response.success && response.data) {
               setSupportedLanguages(response.data);
               // 첫 번째 언어를 기본값으로 설정 (python이 있으면 python, 없으면 첫 번째)
-              if (response.data.includes('python')) {
-                setLanguage('python');
+              if (response.data.includes("python")) {
+                setLanguage("python");
               } else if (response.data.length > 0) {
                 setLanguage(response.data[0]);
               }
@@ -287,7 +287,13 @@ export default function RoomPage() {
           } catch (error) {
             console.error("지원 언어 목록 로드 실패:", error);
             // 기본 언어 목록 사용
-            setSupportedLanguages(['bash', 'python', 'javascript', 'java', 'cpp']);
+            setSupportedLanguages([
+              "bash",
+              "python",
+              "javascript",
+              "java",
+              "cpp",
+            ]);
           }
         };
 
@@ -336,10 +342,10 @@ export default function RoomPage() {
       setIsSubmitting(true);
       const response = await submissionsAPI.create({
         problemId: problem.id,
-        roomId,
+        roomId: parseInt(roomId, 10),
         code,
         language,
-        userId: user?.id || "",
+        userId: user?.id || 0,
       });
 
       if (response.success && response.data) {
@@ -741,7 +747,7 @@ export default function RoomPage() {
                         >
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-sm font-medium text-gray-900">
-                              제출 #{submission.id.slice(0, 8)}
+                              제출 #{String(submission.id).slice(0, 8)}
                             </span>
                             <div className="flex items-center space-x-1">
                               {submission.status === "ACCEPTED" ? (

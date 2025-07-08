@@ -188,8 +188,8 @@ export const roomsAPI = {
     return response.data;
   },
 
-  join: async (roomId: string): Promise<ApiResponse<void>> => {
-    const response = await apiClient.post(`/rooms/${roomId}/join`);
+  join: async (roomId: string, userId: number): Promise<ApiResponse<void>> => {
+    const response = await apiClient.post(`/rooms/${roomId}/join`, { userId });
     return response.data;
   },
 
@@ -225,17 +225,13 @@ export const submissionsAPI = {
     return response.data;
   },
 
-  create: async (
-    data: Omit<
-      Submission,
-      | "id"
-      | "createdAt"
-      | "updatedAt"
-      | "status"
-      | "executionTime"
-      | "memoryUsed"
-    >
-  ): Promise<ApiResponse<Submission>> => {
+  create: async (data: {
+    problemId: number;
+    roomId: number;
+    userId: number;
+    code: string;
+    language: string;
+  }): Promise<ApiResponse<Submission>> => {
     const response = await apiClient.post("/submissions", data);
     return response.data;
   },
