@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 export default function TestPage() {
   return (
@@ -7,23 +7,24 @@ export default function TestPage() {
         <h1 className="text-4xl font-bold text-gray-900 mb-8">
           CSS 테스트 페이지
         </h1>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* 기본 카드 */}
           <div className="card">
             <div className="card-header">
               <h2 className="card-title">기본 카드</h2>
-              <p className="card-description">Tailwind CSS가 제대로 적용되었는지 확인합니다.</p>
+              <p className="card-description">
+                Tailwind CSS가 제대로 적용되었는지 확인합니다.
+              </p>
             </div>
             <div className="card-content">
               <p className="text-gray-700">
-                이 카드가 스타일이 적용되어 보인다면 CSS가 정상적으로 작동하고 있습니다.
+                이 카드가 스타일이 적용되어 보인다면 CSS가 정상적으로 작동하고
+                있습니다.
               </p>
             </div>
             <div className="card-footer">
-              <button className="btn btn-primary">
-                기본 버튼
-              </button>
+              <button className="btn btn-primary">기본 버튼</button>
             </div>
           </div>
 
@@ -31,19 +32,15 @@ export default function TestPage() {
           <div className="card">
             <div className="card-header">
               <h2 className="card-title">버튼 테스트</h2>
-              <p className="card-description">다양한 버튼 스타일을 확인합니다.</p>
+              <p className="card-description">
+                다양한 버튼 스타일을 확인합니다.
+              </p>
             </div>
             <div className="card-content">
               <div className="space-y-4">
-                <button className="btn btn-primary">
-                  Primary Button
-                </button>
-                <button className="btn btn-secondary">
-                  Secondary Button
-                </button>
-                <button className="btn btn-outline">
-                  Outline Button
-                </button>
+                <button className="btn btn-primary">Primary Button</button>
+                <button className="btn btn-secondary">Secondary Button</button>
+                <button className="btn btn-outline">Outline Button</button>
               </div>
             </div>
           </div>
@@ -52,7 +49,9 @@ export default function TestPage() {
           <div className="card">
             <div className="card-header">
               <h2 className="card-title">색상 테스트</h2>
-              <p className="card-description">Primary 색상이 제대로 적용되는지 확인합니다.</p>
+              <p className="card-description">
+                Primary 색상이 제대로 적용되는지 확인합니다.
+              </p>
             </div>
             <div className="card-content">
               <div className="space-y-2">
@@ -73,7 +72,9 @@ export default function TestPage() {
           <div className="card">
             <div className="card-header">
               <h2 className="card-title">레이아웃 테스트</h2>
-              <p className="card-description">Flexbox와 Grid가 제대로 작동하는지 확인합니다.</p>
+              <p className="card-description">
+                Flexbox와 Grid가 제대로 작동하는지 확인합니다.
+              </p>
             </div>
             <div className="card-content">
               <div className="flex items-center justify-between p-4 bg-gray-100 rounded">
@@ -99,4 +100,4 @@ export default function TestPage() {
       </div>
     </div>
   );
-} 
+}

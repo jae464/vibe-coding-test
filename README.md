@@ -1,25 +1,32 @@
 # 알고리즘 대회 플랫폼
 
+Cursor AI를 통해 바이브 코딩으로 만든 프로젝트입니다.
+프롬프트로 잘 수정이 되지 않는 버그를 제외하고는 전부 AI가 작성한 코드입니다.
+
 실시간 협업 알고리즘 문제 풀이 플랫폼입니다. 여러 명이 함께 문제를 풀고, 실시간으로 코드를 공유하며, 서로의 아이디어를 나눌 수 있습니다.
 
 ## 🚀 주요 기능
 
 ### 🎯 실시간 협업
+
 - **동시 코드 편집**: 여러 명이 동시에 같은 코드를 편집
 - **실시간 동기화**: 코드 변경사항이 실시간으로 모든 참가자에게 전송
 - **사용자 관리**: 참가자 참가/퇴장 실시간 알림
 
 ### 💬 실시간 채팅
+
 - **방 내 채팅**: 팀원들과 실시간 메시지 교환
 - **사용자 구분**: 각 사용자별 메시지 표시
 - **실시간 업데이트**: 메시지가 즉시 모든 참가자에게 전송
 
 ### ⚡ 자동 채점 시스템
+
 - **즉시 채점**: 코드 제출 시 자동으로 채점 실행
 - **다양한 언어**: JavaScript, Python, Java, C++ 지원
 - **실시간 결과**: 채점 결과를 실시간으로 표시
 
 ### 🏆 대회 관리
+
 - **대회 생성**: 관리자가 대회를 생성하고 관리
 - **문제 관리**: 다양한 난이도의 문제 등록
 - **참가자 관리**: 대회별 참가자 관리
@@ -27,6 +34,7 @@
 ## 🛠 기술 스택
 
 ### 백엔드
+
 - **NestJS** - Node.js 프레임워크
 - **TypeORM** - 데이터베이스 ORM
 - **PostgreSQL** - 메인 데이터베이스
@@ -35,6 +43,7 @@
 - **JWT** - 인증 시스템
 
 ### 프론트엔드
+
 - **Next.js 14** - React 프레임워크
 - **TypeScript** - 타입 안전성
 - **Tailwind CSS** - 스타일링
@@ -121,27 +130,32 @@ docker run -d --name judge-service algorithm-judge
 ## 📖 API 문서
 
 ### 인증 API
+
 - `POST /api/auth/register` - 회원가입
 - `POST /api/auth/login` - 로그인
 - `GET /api/auth/me` - 현재 사용자 정보
 
 ### 대회 API
+
 - `GET /api/contests` - 대회 목록 조회
 - `POST /api/contests` - 대회 생성
 - `GET /api/contests/:id` - 대회 상세 조회
 
 ### 문제 API
+
 - `GET /api/problems` - 문제 목록 조회
 - `POST /api/problems` - 문제 생성
 - `GET /api/problems/:id` - 문제 상세 조회
 
 ### 방 API
+
 - `GET /api/rooms` - 방 목록 조회
 - `POST /api/rooms` - 방 생성
 - `POST /api/rooms/:id/join` - 방 참가
 - `POST /api/rooms/:id/leave` - 방 퇴장
 
 ### 제출 API
+
 - `POST /api/submissions` - 코드 제출
 - `GET /api/submissions` - 제출 목록 조회
 - `GET /api/submissions/:id` - 제출 상세 조회
@@ -149,12 +163,14 @@ docker run -d --name judge-service algorithm-judge
 ## 🔌 WebSocket 이벤트
 
 ### 클라이언트 → 서버
+
 - `join-room` - 방 참가
 - `leave-room` - 방 퇴장
 - `code-change` - 코드 변경
 - `send-message` - 채팅 메시지 전송
 
 ### 서버 → 클라이언트
+
 - `user-joined` - 사용자 참가 알림
 - `user-left` - 사용자 퇴장 알림
 - `code-sync` - 코드 동기화
@@ -164,6 +180,7 @@ docker run -d --name judge-service algorithm-judge
 ## 🗄 데이터베이스 스키마
 
 ### 주요 엔티티
+
 - **User** - 사용자 정보
 - **Contest** - 대회 정보
 - **Problem** - 문제 정보
@@ -176,16 +193,19 @@ docker run -d --name judge-service algorithm-judge
 ## 🔒 보안
 
 ### 인증
+
 - JWT 토큰 기반 인증
 - 토큰 만료 시간 설정
 - 자동 토큰 갱신
 
 ### 채점 환경
+
 - Docker 컨테이너 격리
 - 리소스 제한 설정
 - 안전한 코드 실행
 
 ### 입력 검증
+
 - 모든 API 엔드포인트 입력 검증
 - SQL 인젝션 방지
 - XSS 공격 방지
@@ -242,15 +262,18 @@ npm run test:coverage
 ## 📝 개발 가이드
 
 ### 코드 스타일
+
 - ESLint 및 Prettier 사용
 - TypeScript 엄격 모드
 - 일관된 네이밍 컨벤션
 
 ### 커밋 메시지
+
 - Conventional Commits 사용
 - 명확한 변경사항 설명
 
 ### 브랜치 전략
+
 - `main` - 프로덕션 브랜치
 - `develop` - 개발 브랜치
 - `feature/*` - 기능 브랜치
@@ -280,4 +303,4 @@ npm run test:coverage
 - [Next.js](https://nextjs.org/)
 - [Socket.IO](https://socket.io/)
 - [Monaco Editor](https://microsoft.github.io/monaco-editor/)
-- [Tailwind CSS](https://tailwindcss.com/) 
+- [Tailwind CSS](https://tailwindcss.com/)
