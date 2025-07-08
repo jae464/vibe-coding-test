@@ -247,11 +247,11 @@ export class TerminalService {
             reject(streamErr);
           });
 
-          // 타임아웃 설정 (30초)
+          // 타임아웃 설정 (60초)
           setTimeout(() => {
             console.error("command exec.start timeout");
             reject(new Error("명령어 실행이 타임아웃되었습니다."));
-          }, 30000);
+          }, 60000);
         });
       });
     } catch (error) {

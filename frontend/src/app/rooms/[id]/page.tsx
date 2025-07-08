@@ -242,13 +242,16 @@ export default function RoomPage() {
   const getInstallAndRunCommand = (lang: string, filename: string) => {
     switch (lang) {
       case "javascript":
-        return `npm install -g node && node ${filename}`;
+        return `apt-get install -y nodejs && node ${filename}`;
+      // return `npm install -g node && node ${filename}`;
       case "python":
-        return `python3 ${filename}`;
+        return `apt-get install -y python3 && python3 ${filename}`;
       case "java":
-        return `javac ${filename} && java Main`;
+        return `apt-get install -y openjdk-17-jdk && javac ${filename} && java Main`;
+      // return `javac ${filename} && java Main`;
       case "cpp":
-        return `g++ -o main ${filename} && ./main`;
+        return `apt-get install -y g++ && g++ -o main ${filename} && ./main`;
+      // return `g++ -o main ${filename} && ./main`;
       case "bash":
         return `chmod +x ${filename} && ./${filename}`;
       default:
