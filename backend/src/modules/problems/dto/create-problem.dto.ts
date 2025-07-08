@@ -4,12 +4,34 @@ import {
   IsNumber,
   IsOptional,
   IsEnum,
+  IsArray,
+  ValidateNested,
+  IsBoolean,
 } from "class-validator";
+import { Type } from "class-transformer";
 
 export enum ProblemDifficulty {
   EASY = "EASY",
   MEDIUM = "MEDIUM",
   HARD = "HARD",
+}
+
+export class CreateTestcaseDto {
+  @IsString()
+  @IsNotEmpty()
+  input: string;
+
+  @IsString()
+  @IsNotEmpty()
+  output: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isSample?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  orderIndex?: number;
 }
 
 export class CreateProblemDto {
@@ -55,4 +77,10 @@ export class CreateProblemDto {
   @IsOptional()
   @IsNumber()
   order?: number;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateTestcaseDto)
+  testcases?: CreateTestcaseDto[];
 }

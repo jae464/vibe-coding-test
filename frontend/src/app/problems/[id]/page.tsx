@@ -372,6 +372,37 @@ int main() {
             </div>
           </div>
 
+          {/* 테스트케이스 정보 */}
+          {problem && problem.testcases && problem.testcases.length > 0 && (
+            <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                예시 테스트케이스
+              </h2>
+              <div className="space-y-4">
+                {problem.testcases
+                  .filter(tc => tc.isSample)
+                  .map((testcase, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg p-4">
+                      <h3 className="text-sm font-medium text-gray-900 mb-2">
+                        예시 {index + 1}
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <div className="text-xs font-medium text-gray-700 mb-1">입력</div>
+                          <pre className="bg-gray-50 p-2 rounded text-xs text-gray-700 overflow-x-auto">{testcase.input}</pre>
+                        </div>
+                        <div>
+                          <div className="text-xs font-medium text-gray-700 mb-1">출력</div>
+                          <pre className="bg-gray-50 p-2 rounded text-xs text-gray-700 overflow-x-auto">{testcase.output}</pre>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
+          )}
+
           {/* 제출 결과 */}
           {submissionResult && (
             <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -398,13 +429,23 @@ int main() {
                     </span>
                   )}
                 </div>
+                
+                {/* 상세 결과 메시지 */}
+                {submissionResult.resultMessage && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+                    <pre className="text-sm text-gray-700 whitespace-pre-wrap">
+                      {submissionResult.resultMessage}
+                    </pre>
+                  </div>
+                )}
+                
                 {submissionResult.status === "WRONG_ANSWER" && (
                   <div className="bg-red-50 border border-red-200 rounded-md p-4">
                     <h3 className="text-sm font-medium text-red-800 mb-2">
                       오답입니다
                     </h3>
                     <p className="text-sm text-red-700">
-                      코드를 다시 확인하고 수정해보세요.
+                      코드를 다시 확인하고 수정해보세요. 위의 상세 정보를 참고하세요.
                     </p>
                   </div>
                 )}
@@ -415,6 +456,26 @@ int main() {
                     </h3>
                     <p className="text-sm text-green-700">
                       축하합니다! 문제를 성공적으로 해결했습니다.
+                    </p>
+                  </div>
+                )}
+                {submissionResult.status === "TIME_LIMIT_EXCEEDED" && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                    <h3 className="text-sm font-medium text-yellow-800 mb-2">
+                      시간 초과
+                    </h3>
+                    <p className="text-sm text-yellow-700">
+                      코드의 시간 복잡도를 개선해보세요.
+                    </p>
+                  </div>
+                )}
+                {submissionResult.status === "RUNTIME_ERROR" && (
+                  <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                    <h3 className="text-sm font-medium text-red-800 mb-2">
+                      런타임 에러
+                    </h3>
+                    <p className="text-sm text-red-700">
+                      코드 실행 중 오류가 발생했습니다. 위의 상세 정보를 참고하세요.
                     </p>
                   </div>
                 )}

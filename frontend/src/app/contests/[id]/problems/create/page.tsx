@@ -6,6 +6,12 @@ import { problemsAPI, contestsAPI } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 import { Contest } from "@/types";
 
+interface TestCase {
+  input: string;
+  output: string;
+  isSample: boolean;
+}
+
 export default function CreateProblemPage() {
   const [formData, setFormData] = useState({
     title: "",
@@ -14,6 +20,11 @@ export default function CreateProblemPage() {
     timeLimit: 1000,
     memoryLimit: 128,
   });
+  const [testCases, setTestCases] = useState<TestCase[]>([{
+    input: "",
+    output: "",
+    isSample: true,
+  }]);
   const [contest, setContest] = useState<Contest | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,6 +102,24 @@ export default function CreateProblemPage() {
       return;
     }
 
+    // 테스트케이스 유효성 검사
+    if (testCases.length === 0) {
+      setError("최소 1개의 테스트케이스를 입력해주세요.");
+      return;
+    }
+
+    for (let i = 0; i < testCases.length; i++) {
+      const tc = testCases[i];
+      if (!tc.input.trim()) {
+        setError(`테스트케이스 ${i + 1}의 입력을 입력해주세요.`);
+        return;
+      }
+      if (!tc.output.trim()) {
+        setError(`테스트케이스 ${i + 1}의 출력을 입력해주세요.`);
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -102,6 +131,12 @@ export default function CreateProblemPage() {
         timeLimit: formData.timeLimit,
         memoryLimit: formData.memoryLimit,
         contestId: parseInt(contestId),
+        testcases: testCases.map((tc, index) => ({
+          input: tc.input.trim(),
+          output: tc.output.trim(),
+          isSample: tc.isSample,
+          orderIndex: index,
+        })),
       });
 
       if (response.success && response.data) {
@@ -284,6 +319,96 @@ export default function CreateProblemPage() {
               <p className="mt-1 text-sm text-gray-500">
                 16MB에서 512MB 사이의 값을 입력하세요.
               </p>
+            </div>
+
+            {/* 테스트케이스 */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  테스트케이스 *
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setTestCases([...testCases, { input: "", output: "", isSample: false }])}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  + 테스트케이스 추가
+                </button>
+              </div>
+              
+              {testCases.map((testCase, index) => (
+                <div key={index} className="mb-4 p-4 border border-gray-200 rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium text-gray-900">
+                      테스트케이스 {index + 1}
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center text-sm text-gray-600">
+                        <input
+                          type="checkbox"
+                          checked={testCase.isSample}
+                          onChange={(e) => {
+                            const newTestCases = [...testCases];
+                            newTestCases[index].isSample = e.target.checked;
+                            setTestCases(newTestCases);
+                          }}
+                          className="mr-1"
+                        />
+                        샘플 테스트케이스
+                      </label>
+                      {testCases.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newTestCases = testCases.filter((_, i) => i !== index);
+                            setTestCases(newTestCases);
+                          }}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >
+                          삭제
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        입력
+                      </label>
+                      <textarea
+                        value={testCase.input}
+                        onChange={(e) => {
+                          const newTestCases = [...testCases];
+                          newTestCases[index].input = e.target.value;
+                          setTestCases(newTestCases);
+                        }}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="테스트케이스 입력을 입력하세요"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        출력
+                      </label>
+                      <textarea
+                        value={testCase.output}
+                        onChange={(e) => {
+                          const newTestCases = [...testCases];
+                          newTestCases[index].output = e.target.value;
+                          setTestCases(newTestCases);
+                        }}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="예상 출력을 입력하세요"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* 버튼 */}
