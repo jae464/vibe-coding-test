@@ -1,18 +1,8 @@
 FROM gcc:11
 
-# 시스템 업데이트 및 필요한 패키지 설치
+# C/C++ 컴파일 및 실행에 필요한 최소 패키지만 설치
 RUN apt-get update && apt-get install -y \
     build-essential \
-    cmake \
-    gdb \
-    valgrind \
-    wget \
-    curl \
-    git \
-    vim \
-    nano \
-    clang \
-    lldb \
     && rm -rf /var/lib/apt/lists/*
 
 # 작업 디렉토리 설정

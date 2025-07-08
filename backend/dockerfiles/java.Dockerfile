@@ -1,17 +1,7 @@
 FROM openjdk:17-slim
 
-# 시스템 업데이트 및 필요한 패키지 설치
+# Java 컴파일 및 실행에 필요한 최소 패키지만 설치
 RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    make \
-    wget \
-    curl \
-    git \
-    vim \
-    nano \
-    maven \
-    gradle \
     && rm -rf /var/lib/apt/lists/*
 
 # 작업 디렉토리 설정
