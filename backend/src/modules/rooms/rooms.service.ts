@@ -126,11 +126,17 @@ export class RoomsService {
       `[RoomsService] WebSocket 연결된 참가자 수: ${connectedParticipants}`
     );
 
+    // 실제 연결된 참가자 정보 가져오기
+    const connectedUsers = this.roomGateway.getConnectedUsers();
+    const roomParticipants = Array.from(connectedUsers.values()).filter(
+      (user) => user.roomId === joinRoomDto.roomId
+    );
+
     // 방 업데이트를 WebSocket을 통해 브로드캐스트
     await this.roomGateway.broadcastRoomUpdate(joinRoomDto.roomId, {
       roomId: joinRoomDto.roomId,
       participantCount: connectedParticipants,
-      participants: [], // WebSocket에서 실제 참가자 목록을 관리
+      participants: roomParticipants,
     });
 
     return savedRoomUser;
@@ -166,11 +172,17 @@ export class RoomsService {
       `[RoomsService] WebSocket 연결된 참가자 수: ${connectedParticipants}`
     );
 
+    // 실제 연결된 참가자 정보 가져오기
+    const connectedUsers = this.roomGateway.getConnectedUsers();
+    const roomParticipants = Array.from(connectedUsers.values()).filter(
+      (user) => user.roomId === roomId
+    );
+
     // 방 업데이트를 WebSocket을 통해 브로드캐스트
     await this.roomGateway.broadcastRoomUpdate(roomId, {
       roomId: roomId,
       participantCount: connectedParticipants,
-      participants: [], // WebSocket에서 실제 참가자 목록을 관리
+      participants: roomParticipants,
     });
   }
 

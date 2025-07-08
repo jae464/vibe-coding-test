@@ -87,44 +87,60 @@ export default function RoomPage() {
   const terminalRef = useRef<HTMLDivElement>(null);
 
   // WebSocket 연결
-  const { connected, emit, sendCodeChange, leaveRoom } = useSocket({
-    roomId,
-    onCodeChange: (newCode: string) => {
-      setCode(newCode);
-    },
-    onChatMessage: (message: ChatMessage) => {
-      setChatMessages((prev) => [...prev, message]);
-    },
-    onSubmissionResult: (result: any) => {
-      console.log("제출 결과:", result);
-      // 제출 결과 처리
-      if (result.submissionId) {
-        setSubmissions((prev) =>
-          prev.map((submission) =>
-            submission.id === result.submissionId
-              ? {
-                  ...submission,
-                  status: result.status,
-                  executionTime: result.executionTime,
-                  memoryUsed: result.memoryUsed,
-                  resultMessage: result.resultMessage,
-                }
-              : submission
-          )
-        );
-        // Pending 상태에서 제거
-        setPendingSubmissions((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(result.submissionId);
-          return newSet;
-        });
-      }
-    },
-    onRoomParticipants: (participants: any[]) => {
-      console.log(participants);
-      setParticipants(participants);
-    },
-  });
+  const { connected, emit, sendCodeChange, leaveRoom, sendChatMessage } =
+    useSocket({
+      roomId,
+      onCodeChange: (newCode: string) => {
+        setCode(newCode);
+      },
+      onUserJoined: (user: User) => {
+        console.log("사용자 참가:", user);
+        // 참가자 목록에 추가
+        setParticipants((prev) => [...prev, user]);
+      },
+      onUserLeft: (user: User) => {
+        console.log("사용자 퇴장:", user);
+        // 참가자 목록에서 제거
+        setParticipants((prev) => prev.filter((p) => p.id !== user.id));
+      },
+      onRoomParticipants: (participants: any[]) => {
+        console.log("방 참가자 목록:", participants);
+        // 참가자 목록 업데이트
+        setParticipants(participants);
+      },
+      onRoomCodeState: (code: string) => {
+        console.log("방 코드 상태:", code);
+        setCode(code);
+      },
+      onChatMessage: (message: ChatMessage) => {
+        setChatMessages((prev) => [...prev, message]);
+      },
+      onSubmissionResult: (result: any) => {
+        console.log("제출 결과:", result);
+        // 제출 결과 처리
+        if (result.submissionId) {
+          setSubmissions((prev) =>
+            prev.map((submission) =>
+              submission.id === result.submissionId
+                ? {
+                    ...submission,
+                    status: result.status,
+                    executionTime: result.executionTime,
+                    memoryUsed: result.memoryUsed,
+                    resultMessage: result.resultMessage,
+                  }
+                : submission
+            )
+          );
+          // Pending 상태에서 제거
+          setPendingSubmissions((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(result.submissionId);
+            return newSet;
+          });
+        }
+      },
+    });
 
   // 페이지 벗어날 때 방 나가기
   useEffect(() => {
@@ -310,10 +326,11 @@ export default function RoomPage() {
         };
 
         const loadParticipants = async () => {
-          const response = await roomsAPI.getParticipants(roomId);
-          if (response.success && response.data) {
-            setParticipants(response.data);
-          }
+          // WebSocket을 통해 참가자 정보를 받으므로 초기 로드 제거
+          // const response = await roomsAPI.getParticipants(roomId);
+          // if (response.success && response.data) {
+          //   setParticipants(response.data);
+          // }
         };
 
         const loadSubmissions = async () => {
@@ -384,11 +401,7 @@ export default function RoomPage() {
   const handleSendMessage = () => {
     if (!newMessage.trim() || !connected) return;
 
-    emit("chat_message", {
-      roomId,
-      message: newMessage.trim(),
-    });
-
+    sendChatMessage(newMessage.trim());
     setNewMessage("");
   };
 
@@ -795,29 +808,38 @@ export default function RoomPage() {
                   {activeTab === "chat" && (
                     <div className="h-full flex flex-col">
                       <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-                        {chatMessages.map((message, index) => (
-                          <div
-                            key={index}
-                            className={`flex ${
-                              message.userId === user?.id
-                                ? "justify-end"
-                                : "justify-start"
-                            }`}
-                          >
+                        {chatMessages.map((message, index) => {
+                          const isOwnMessage = message.userId === user?.id;
+                          return (
                             <div
-                              className={`max-w-xs px-3 py-2 rounded-lg ${
-                                message.userId === user?.id
-                                  ? "bg-blue-600 text-white"
-                                  : "bg-gray-200 text-gray-900"
+                              key={index}
+                              className={`flex ${
+                                isOwnMessage ? "justify-end" : "justify-start"
                               }`}
                             >
-                              <div className="text-xs opacity-75 mb-1">
-                                {message.username}
+                              <div
+                                className={`max-w-xs px-3 py-2 rounded-lg ${
+                                  isOwnMessage
+                                    ? "bg-blue-600 text-white"
+                                    : "bg-gray-200 text-gray-900"
+                                }`}
+                              >
+                                <div
+                                  className={`text-xs mb-1 ${
+                                    isOwnMessage
+                                      ? "text-blue-100"
+                                      : "text-gray-600"
+                                  }`}
+                                >
+                                  {isOwnMessage ? "나" : message.username}
+                                </div>
+                                <div className="text-sm break-words">
+                                  {message.message}
+                                </div>
                               </div>
-                              <div className="text-sm">{message.message}</div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                       <div className="flex space-x-2">
                         <input

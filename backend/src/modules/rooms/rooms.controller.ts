@@ -43,8 +43,7 @@ export class RoomsController {
 
   @Get(":roomId/participants")
   async getParticipants(@Param("roomId") roomId: string) {
-    const participants =
-      await this.roomsService.getConnectedParticipants(+roomId);
+    const participants = await this.roomsService.getParticipants(+roomId);
     return ApiResponseDto.success(
       participants,
       "방 참가자 목록을 성공적으로 조회했습니다."
